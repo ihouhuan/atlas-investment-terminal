@@ -1,0 +1,112 @@
+#!/bin/bash
+# Atlas Python Wrapper v2.0
+# Use Python 3.12 venv with auto-configured proxy
+# Subcommands:
+#   china <script> [args]   - Run China market scripts
+#   cross                   - Run cross-market observer
+#   morning                 - Run China morning brief
+#   market <symbols>        - Fetch market data for symbols
+#   research <symbol>       - Run stock research for symbol
+#   valuation <symbol>      - Run valuation engine for symbol
+#   committee <symbol>      - Run investment committee for symbol
+#   python <script> [args]  - Run any Python script in venv
+#
+# Or pass any path/args to run directly with venv python.
+
+VENV_PY="/Users/huan/.openclaw/workspace/.venv/bin/python"
+WORKSPACE="/Users/huan/.openclaw/workspace"
+SCRIPTS_DIR="$WORKSPACE/investment/scripts"
+CHINA_SCRIPTS="$WORKSPACE/investment/china_market/scripts"
+CROSS_SCRIPTS="$WORKSPACE/investment/cross_market/scripts"
+
+if [ ! -x "$VENV_PY" ]; then
+    echo "ERROR: Atlas venv not found at $VENV_PY" >&2
+    echo "Re-create with: /opt/homebrew/bin/python3.12 -m venv /Users/huan/.openclaw/workspace/.venv" >&2
+    exit 1
+fi
+
+# Handle subcommands
+case "${1:-}" in
+    china)
+        shift
+        script="${1:?ERROR: china requires <script_name> [args]}"
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/$script" "$@"
+        ;;
+    cross|cross-market|cross_market)
+        shift
+        exec "$VENV_PY" "$CROSS_SCRIPTS/cross_market_observer.py" "$@"
+        ;;
+    morning|mb)
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_morning_brief.py" "$@"
+        ;;
+    market|data)
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_market_data.py" "$@"
+        ;;
+    research)
+        shift
+        symbol="${1:?ERROR: research requires <symbol>}"
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_stock_research.py" "$symbol" "$@"
+        ;;
+    valuation|val)
+        shift
+        symbol="${1:?ERROR: valuation requires <symbol>}"
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_valuation_engine.py" "$symbol" "$@"
+        ;;
+    committee|cmt)
+        shift
+        symbol="${1:?ERROR: committee requires <symbol>}"
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_investment_committee.py" "$symbol" "$@"
+        ;;
+    sector_scan|sector|scan)
+        shift
+        exec "$VENV_PY" "$CHINA_SCRIPTS/china_sector_scan.py" "$@"
+        ;;
+    python|py)
+        shift
+        exec "$VENV_PY" "$@"
+        ;;
+    help|--help|-h|"")
+        cat <<'EOF2'
+Atlas CLI v2.0 - Investment Office Command Wrapper
+
+Usage:
+  atlas_py <subcommand> [args]
+  atlas_py <script_path> [args]      # Direct script execution
+
+Subcommands:
+  china <script> [args]    Run China market script (e.g. china_market_data.py)
+  cross                    Run cross-market observer (US semi → A 股)
+  morning [args]           Run China morning brief
+  market <symbols...>      Fetch A 股 market data for symbols
+  research <symbol>        Run stock research template
+  valuation <symbol>       Run valuation engine + dynamic rating
+  committee <symbol>       Run 5-role investment committee
+  sector_scan [args]       全市场科技板块扫描（5日涨幅 → Top 3 赛道 × Top 3/赛道）
+  python <args>            Pass-through to venv python
+
+Examples:
+  atlas_py cross                                      # Generate cross-market brief
+  atlas_py morning                                    # Generate morning brief
+  atlas_py market 601899.SH 001258.SZ 600693.SH      # Fetch data
+  atlas_py valuation 601899                           # Valuation + rating
+  atlas_py sector_scan                             # 全市场 Top 3 赛道 × Top 3
+  atlas_py sector_scan --top-sectors 5 --top-per-sector 5  # 自定义
+  atlas_py china china_valuation_engine.py 001258     # Direct script via china/
+  atlas_py /path/to/any_script.py                     # Direct path
+
+Direct execution (backward compatible):
+  atlas_py investment/china_market/scripts/china_market_data.py 601899.SH
+EOF2
+        exit 0
+        ;;
+    *)
+        # Direct script execution (backward compatible)
+        exec "$VENV_PY" "$@"
+        ;;
+esac

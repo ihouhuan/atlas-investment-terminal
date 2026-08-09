@@ -1,0 +1,154 @@
+{
+  "version": "1.1",
+  "owner": "Atlas Investment Office",
+  "last_updated": "2026-08-08",
+  "currency": "CNY",
+  "primary_market": "A 股",
+  "secondary_market": "美股（情绪参考 20%）",
+  "data_source": "Tencent qt.gtimg.cn + web.ifzq.gtimg.cn + yfinance (US)",
+  "note": "v1.1 China Equity：用户已确认无美股持仓，仅 3 只 A 股 + 87 只自选股。",
+  "positions": {
+    "owner": "用户真实 A 股持仓",
+    "last_updated": "2026-08-08",
+    "currency": "CNY",
+    "broker": "用户券商",
+    "notes": "持仓来自用户截图（2026-08-08 11:00 GMT+8）。当前 100% 满仓。",
+    "positions": [
+      {
+        "symbol": "601899.SH",
+        "name": "紫金矿业",
+        "shares": 200,
+        "shares_available": 200,
+        "cost_price": 35.376,
+        "current_price": 35.15,
+        "market_value": 7030.0,
+        "market": "SSE",
+        "currency": "CNY",
+        "pnl": -45.27,
+        "pnl_pct": -0.64,
+        "sector": "贵金属/有色金属（铜金）",
+        "industry": "小金属",
+        "risk_level": "MEDIUM",
+        "dynamic_rating": {
+          "score": 70.0,
+          "rating": "LOW",
+          "evaluated_at": "2026-08-08",
+          "note": "PE 15.15 + 大盘股（9347 亿）→ LOW；但当前仓位 42.89% 超核心 ≤15% 上限"
+        },
+        "thesis": "待补充（用户未提供）",
+        "buy_date": "待补充",
+        "buy_reason": "待补充",
+        "validation_metrics": {},
+        "invalid_conditions": [],
+        "review_date": "2026-11-08"
+      },
+      {
+        "symbol": "001258.SZ",
+        "name": "立新能源",
+        "shares": 200,
+        "shares_available": 200,
+        "cost_price": 12.875,
+        "current_price": 13.16,
+        "market_value": 2632.0,
+        "market": "SZSE",
+        "currency": "CNY",
+        "pnl": 56.97,
+        "pnl_pct": 2.21,
+        "sector": "新能源（风电/光伏运营）",
+        "industry": "电力",
+        "risk_level": "MEDIUM",
+        "dynamic_rating": {
+          "score": 15.0,
+          "rating": "HIGH",
+          "evaluated_at": "2026-08-08",
+          "note": "PE 121.87 + 高换手率 + 小盘股 → HIGH；当前仓位 16.06% 超主题 ≤3% 上限"
+        },
+        "thesis": "待补充（用户未提供）",
+        "buy_date": "待补充",
+        "buy_reason": "待补充",
+        "validation_metrics": {},
+        "invalid_conditions": [],
+        "review_date": "2026-11-08"
+      },
+      {
+        "symbol": "600693.SH",
+        "name": "东百集团",
+        "shares": 700,
+        "shares_available": 700,
+        "cost_price": 9.654,
+        "current_price": 9.61,
+        "market_value": 6727.0,
+        "market": "SSE",
+        "currency": "CNY",
+        "pnl": -31.07,
+        "pnl_pct": -0.46,
+        "sector": "零售/商业地产",
+        "industry": "零售",
+        "risk_level": "MEDIUM",
+        "dynamic_rating": {
+          "score": 25.0,
+          "rating": "HIGH",
+          "evaluated_at": "2026-08-08",
+          "note": "PE 163.30 + 小盘股 → HIGH；当前仓位 41.05% 超主题 ≤3% 上限"
+        },
+        "thesis": "待补充（用户未提供）",
+        "buy_date": "待补充",
+        "buy_reason": "待补充",
+        "validation_metrics": {},
+        "invalid_conditions": [],
+        "review_date": "2026-11-08"
+      }
+    ]
+  },
+  "v1_1_risk_assessment": {
+    "rules_source": "investment/portfolio/risk_budget.md (v1.1 China Equity + Dynamic Tier)",
+    "tier_model": {
+      "core": {"single_stock_max": 0.15, "sector_max": 0.40},
+      "growth": {"single_stock_max": 0.08, "sector_max": 0.30},
+      "thematic": {"single_stock_max": 0.03, "total_max": 0.10}
+    },
+    "current_status": "🔴 严重违规",
+    "violations": [
+      {
+        "stock": "紫金矿业",
+        "tier_suggested": "core (LOW rating)",
+        "current_pct": 0.4289,
+        "rule_max": 0.15,
+        "severity": "🔴 严重超限（28.9%）"
+      },
+      {
+        "stock": "东百集团",
+        "tier_suggested": "thematic (HIGH rating)",
+        "current_pct": 0.4105,
+        "rule_max": 0.03,
+        "severity": "🔴 严重超限（38.1%）"
+      },
+      {
+        "stock": "立新能源",
+        "tier_suggested": "thematic (HIGH rating)",
+        "current_pct": 0.1606,
+        "rule_max": 0.03,
+        "severity": "🔴 严重超限（13.1%）"
+      },
+      {
+        "rule": "现金最低 ≥20%",
+        "actual": "0%（100% 满仓）",
+        "severity": "🔴 严重违反"
+      }
+    ],
+    "industry_concentration": {
+      "贵金属/小金属": "43.0% (紫金矿业)",
+      "零售": "41.1% (东百集团)",
+      "电力/新能源": "16.1% (立新能源)",
+      "note": "行业单一性极高，缺乏分散"
+    },
+    "note": "上述违规均为状态记录，不是交易建议。决策权在用户。",
+    "next_action": "等待用户决策：减仓 / 维持现状"
+  },
+  "watchlist_source": {
+    "file": "investment/china_market/data/user_watchlist_grouped.json",
+    "total_stocks": 87,
+    "raw_file": "inbound/Table---2a9059a6-5146-4d83-8d8d-287a44bdee82.xls",
+    "imported_at": "2026-08-08"
+  }
+}

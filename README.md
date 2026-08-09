@@ -1,0 +1,67 @@
+# Atlas Investment Terminal 2.0
+
+一个本地运行的 A 股投资研究终端，用于市场监控、股票池管理、公司研究、估值分析、组合风险和 AI 辅助研究。
+
+Atlas 只提供研究与决策支持；不连接券商，不执行自动交易。
+
+## 项目入口
+
+- `app/`：Streamlit 仪表盘与页面组件。
+- `backend/`：FastAPI 接口、业务服务和数据库访问。
+- `data/`：行情、财务数据及本地缓存。
+- `quant/`：因子、回测和选股模型。
+- `ai/`：研究分析与投资委员会。
+- `portfolio/`：持仓、风险、Thesis、决策日志和压力测试。
+- `config/`：非敏感配置模板。
+- `tests/`：自动化测试。
+- `docs/`：架构、迁移和使用说明。
+- `legacy/openclaw-atlas/`：旧 OpenClaw Atlas 的完整归档，仅供提取投资思想资产与历史参考。
+
+## 目录约定
+
+- 代码与模块目录使用英文，保持 Python、Streamlit 和 FastAPI 生态的通用性。
+- 研究笔记、投资规则和面向使用者的文档可使用中文。
+- 新功能只能进入对应的新模块；不要向 `legacy/` 添加业务代码或日常产出。
+- 所有行情、财务或 AI 输出均需保留数据来源与生成时间。
+- 自动交易、券商下单和未经确认的账户操作均不在本项目范围内。
+
+## 当前阶段
+
+已完成旧 Atlas 资产归档和新项目根目录规范化。下一步是依据迁移报告建立最小可运行的数据层与仪表盘基础，而不是直接复用旧脚本。
+
+## 初始化本地数据
+
+首次建立本地 SQLite 数据库并导入已归档的历史资产：
+
+```bash
+python3 -m backend.services.initialize_atlas
+```
+
+该命令只创建 `data/atlas.db`，导入旧持仓、投资者画像、决策日志和唯一生效的风险预算；不会连接券商、获取实时行情或执行交易。
+
+## 启动终端
+
+先启动本地 API：
+
+```bash
+.venv/bin/uvicorn backend.api.app:app --reload
+```
+
+另开一个终端启动 Streamlit：
+
+```bash
+.venv/bin/streamlit run app/dashboard/main.py
+```
+
+默认 API 地址为 `http://127.0.0.1:8000`；如需覆盖，设置 `ATLAS_API_URL`。市场概览优先尝试 AkShare，失败时回退腾讯行情；任何来源不可用都会在页面中明确标注。
+
+## 单股财务刷新与只读缓存
+
+`POST /api/v1/stocks/{symbol}/financials/refresh` 使用 AkShare 同花顺关键指标刷新单只股票的财务数据，并把报告期指标标准化后写入 SQLite 的 `financial_metrics` 缓存表。金额统一换算为人民币元，比率统一保存为百分比、倍数或天数，避免把“万/亿/%”等展示格式混入数据层。
+
+`GET /api/v1/stocks/{symbol}` 返回 `financials` 只读缓存，包含最新报告期、指标来源、刷新时间和最近报告期历史。股票详情页只展示该缓存，不提供手动编辑；页面上的“刷新财务数据”按钮会调用上述 API。
+
+## 迁移资料
+
+- 旧系统架构审计：`docs/reference/legacy-architecture-audit-2026-08-08.md`
+- 旧系统归档：`legacy/openclaw-atlas/`

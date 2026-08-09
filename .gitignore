@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime data and generated outputs
+data/cache/
+*.sqlite3
+*.db
+reports/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+config/local.*
+
+# Operating system and editor files
+.DS_Store
+.idea/
+.vscode/

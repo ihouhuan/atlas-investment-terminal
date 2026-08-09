@@ -1,0 +1,785 @@
+[
+  {
+    "symbol": "000657.SZ",
+    "code": "000657",
+    "market": "SZ",
+    "name": "中钨高新",
+    "price": "67.01",
+    "change_pct": "+7.22%",
+    "industry": "小金属"
+  },
+  {
+    "symbol": "600403.SH",
+    "code": "600403",
+    "market": "SH",
+    "name": "大有能源",
+    "price": "6.46",
+    "change_pct": "+0.78%",
+    "industry": "煤炭开采加工"
+  },
+  {
+    "symbol": "002649.SZ",
+    "code": "002649",
+    "market": "SZ",
+    "name": "博彦科技",
+    "price": "10.66",
+    "change_pct": "-5.58%",
+    "industry": "IT服务"
+  },
+  {
+    "symbol": "601899.SH",
+    "code": "601899",
+    "market": "SH",
+    "name": "紫金矿业",
+    "price": "35.15",
+    "change_pct": "+1.88%",
+    "industry": "贵金属"
+  },
+  {
+    "symbol": "002565.SZ",
+    "code": "002565",
+    "market": "SZ",
+    "name": "顺灏股份",
+    "price": "9.95",
+    "change_pct": "+0.71%",
+    "industry": "包装印刷"
+  },
+  {
+    "symbol": "000960.SZ",
+    "code": "000960",
+    "market": "SZ",
+    "name": "锡业股份",
+    "price": "40.34",
+    "change_pct": "+2.78%",
+    "industry": "小金属"
+  },
+  {
+    "symbol": "001328.SZ",
+    "code": "001328",
+    "market": "SZ",
+    "name": "登康口腔",
+    "price": "30.66",
+    "change_pct": "+2.96%",
+    "industry": "美容护理"
+  },
+  {
+    "symbol": "002329.SZ",
+    "code": "002329",
+    "market": "SZ",
+    "name": "皇氏集团",
+    "price": "3.15",
+    "change_pct": "-1.87%",
+    "industry": "饮料制造"
+  },
+  {
+    "symbol": "000661.SZ",
+    "code": "000661",
+    "market": "SZ",
+    "name": "长春高新",
+    "price": "80.51",
+    "change_pct": "+7.13%",
+    "industry": "生物制品"
+  },
+  {
+    "symbol": "002043.SZ",
+    "code": "002043",
+    "market": "SZ",
+    "name": "兔 宝 宝",
+    "price": "12.38",
+    "change_pct": "-2.13%",
+    "industry": "建筑材料"
+  },
+  {
+    "symbol": "588080.SH",
+    "code": "588080",
+    "market": "SH",
+    "name": "科创50ETF易方达",
+    "price": "1.783",
+    "change_pct": "+2.53%",
+    "industry": "--"
+  },
+  {
+    "symbol": "603538.SH",
+    "code": "603538",
+    "market": "SH",
+    "name": "美诺华",
+    "price": "29.20",
+    "change_pct": "+6.61%",
+    "industry": "化学制药"
+  },
+  {
+    "symbol": "301520.SZ",
+    "code": "301520",
+    "market": "SZ",
+    "name": "万邦医药",
+    "price": "56.33",
+    "change_pct": "+12.21%",
+    "industry": "医疗服务"
+  },
+  {
+    "symbol": "600186.SH",
+    "code": "600186",
+    "market": "SH",
+    "name": "莲花控股",
+    "price": "9.89",
+    "change_pct": "+2.17%",
+    "industry": "食品加工制造"
+  },
+  {
+    "symbol": "000533.SZ",
+    "code": "000533",
+    "market": "SZ",
+    "name": "顺钠股份",
+    "price": "12.13",
+    "change_pct": "+0.08%",
+    "industry": "电网设备"
+  },
+  {
+    "symbol": "600644.SH",
+    "code": "600644",
+    "market": "SH",
+    "name": "乐山电力",
+    "price": "10.38",
+    "change_pct": "+0.29%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "001696.SZ",
+    "code": "001696",
+    "market": "SZ",
+    "name": "宗申动力",
+    "price": "15.90",
+    "change_pct": "+3.52%",
+    "industry": "通用设备"
+  },
+  {
+    "symbol": "605179.SH",
+    "code": "605179",
+    "market": "SH",
+    "name": "一鸣食品",
+    "price": "22.84",
+    "change_pct": "+5.45%",
+    "industry": "饮料制造"
+  },
+  {
+    "symbol": "001258.SZ",
+    "code": "001258",
+    "market": "SZ",
+    "name": "立新能源",
+    "price": "13.16",
+    "change_pct": "+7.96%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "002131.SZ",
+    "code": "002131",
+    "market": "SZ",
+    "name": "利欧股份",
+    "price": "5.46",
+    "change_pct": "-0.36%",
+    "industry": "通用设备"
+  },
+  {
+    "symbol": "886068.SZ",
+    "code": "886068",
+    "market": "SZ",
+    "name": "AI视频",
+    "price": "2095.109",
+    "change_pct": "-0.34%",
+    "industry": "--"
+  },
+  {
+    "symbol": "600693.SH",
+    "code": "600693",
+    "market": "SH",
+    "name": "东百集团",
+    "price": "9.61",
+    "change_pct": "+0.63%",
+    "industry": "零售"
+  },
+  {
+    "symbol": "002141.SZ",
+    "code": "002141",
+    "market": "SZ",
+    "name": "贤丰控股",
+    "price": "6.11",
+    "change_pct": "+6.63%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "000815.SZ",
+    "code": "000815",
+    "market": "SZ",
+    "name": "美利云",
+    "price": "18.03",
+    "change_pct": "-1.53%",
+    "industry": "通信服务"
+  },
+  {
+    "symbol": "000938.SZ",
+    "code": "000938",
+    "market": "SZ",
+    "name": "紫光股份",
+    "price": "38.00",
+    "change_pct": "+0.16%",
+    "industry": "IT服务"
+  },
+  {
+    "symbol": "688825.SH",
+    "code": "688825",
+    "market": "SH",
+    "name": "长鑫科技",
+    "price": "52.48",
+    "change_pct": "+1.00%",
+    "industry": "半导体"
+  },
+  {
+    "symbol": "000566.SZ",
+    "code": "000566",
+    "market": "SZ",
+    "name": "海南海药",
+    "price": "5.99",
+    "change_pct": "+2.39%",
+    "industry": "化学制药"
+  },
+  {
+    "symbol": "600396.SH",
+    "code": "600396",
+    "market": "SH",
+    "name": "华电辽能",
+    "price": "17.73",
+    "change_pct": "+2.19%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "002580.SZ",
+    "code": "002580",
+    "market": "SZ",
+    "name": "圣阳股份",
+    "price": "19.08",
+    "change_pct": "-0.16%",
+    "industry": "电池"
+  },
+  {
+    "symbol": "603768.SH",
+    "code": "603768",
+    "market": "SH",
+    "name": "常青股份",
+    "price": "11.22",
+    "change_pct": "+0.27%",
+    "industry": "汽车零部件"
+  },
+  {
+    "symbol": "002901.SZ",
+    "code": "002901",
+    "market": "SZ",
+    "name": "大博医疗",
+    "price": "44.55",
+    "change_pct": "+2.93%",
+    "industry": "医疗器械"
+  },
+  {
+    "symbol": "603703.SH",
+    "code": "603703",
+    "market": "SH",
+    "name": "盛洋科技",
+    "price": "9.27",
+    "change_pct": "+0.43%",
+    "industry": "光学光电子"
+  },
+  {
+    "symbol": "600744.SH",
+    "code": "600744",
+    "market": "SH",
+    "name": "华银电力",
+    "price": "7.88",
+    "change_pct": "+10.06%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "300529.SZ",
+    "code": "300529",
+    "market": "SZ",
+    "name": "健帆生物",
+    "price": "16.38",
+    "change_pct": "-8.08%",
+    "industry": "医疗器械"
+  },
+  {
+    "symbol": "516080.SH",
+    "code": "516080",
+    "market": "SH",
+    "name": "创新药ETF易方达",
+    "price": "0.728",
+    "change_pct": "+7.06%",
+    "industry": "--"
+  },
+  {
+    "symbol": "600487.SH",
+    "code": "600487",
+    "market": "SH",
+    "name": "亨通光电",
+    "price": "59.52",
+    "change_pct": "+6.00%",
+    "industry": "通信设备"
+  },
+  {
+    "symbol": "002384.SZ",
+    "code": "002384",
+    "market": "SZ",
+    "name": "东山精密",
+    "price": "195.27",
+    "change_pct": "+4.04%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "000636.SZ",
+    "code": "000636",
+    "market": "SZ",
+    "name": "风华高科",
+    "price": "58.29",
+    "change_pct": "+0.02%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "600667.SH",
+    "code": "600667",
+    "market": "SH",
+    "name": "太极实业",
+    "price": "19.53",
+    "change_pct": "+1.88%",
+    "industry": "建筑装饰"
+  },
+  {
+    "symbol": "002185.SZ",
+    "code": "002185",
+    "market": "SZ",
+    "name": "华天科技",
+    "price": "17.98",
+    "change_pct": "+4.17%",
+    "industry": "半导体"
+  },
+  {
+    "symbol": "000969.SZ",
+    "code": "000969",
+    "market": "SZ",
+    "name": "安泰科技",
+    "price": "17.45",
+    "change_pct": "+1.99%",
+    "industry": "金属新材料"
+  },
+  {
+    "symbol": "000021.SZ",
+    "code": "000021",
+    "market": "SZ",
+    "name": "深科技",
+    "price": "40.85",
+    "change_pct": "+2.36%",
+    "industry": "消费电子"
+  },
+  {
+    "symbol": "000725.SZ",
+    "code": "000725",
+    "market": "SZ",
+    "name": "京东方Ａ",
+    "price": "6.07",
+    "change_pct": "+1.85%",
+    "industry": "光学光电子"
+  },
+  {
+    "symbol": "002008.SZ",
+    "code": "002008",
+    "market": "SZ",
+    "name": "大族激光",
+    "price": "99.75",
+    "change_pct": "+4.78%",
+    "industry": "自动化设备"
+  },
+  {
+    "symbol": "600105.SH",
+    "code": "600105",
+    "market": "SH",
+    "name": "永鼎股份",
+    "price": "39.00",
+    "change_pct": "+1.62%",
+    "industry": "通信设备"
+  },
+  {
+    "symbol": "600330.SH",
+    "code": "600330",
+    "market": "SH",
+    "name": "天通股份",
+    "price": "23.01",
+    "change_pct": "+6.28%",
+    "industry": "电子化学品"
+  },
+  {
+    "symbol": "002171.SZ",
+    "code": "002171",
+    "market": "SZ",
+    "name": "楚江新材",
+    "price": "10.04",
+    "change_pct": "+1.83%",
+    "industry": "工业金属"
+  },
+  {
+    "symbol": "600498.SH",
+    "code": "600498",
+    "market": "SH",
+    "name": "烽火通信",
+    "price": "39.21",
+    "change_pct": "+3.76%",
+    "industry": "通信设备"
+  },
+  {
+    "symbol": "600110.SH",
+    "code": "600110",
+    "market": "SH",
+    "name": "诺德股份",
+    "price": "10.46",
+    "change_pct": "+9.99%",
+    "industry": "电池"
+  },
+  {
+    "symbol": "688008.SH",
+    "code": "688008",
+    "market": "SH",
+    "name": "澜起科技",
+    "price": "215.52",
+    "change_pct": "+3.44%",
+    "industry": "半导体"
+  },
+  {
+    "symbol": "000063.SZ",
+    "code": "000063",
+    "market": "SZ",
+    "name": "中兴通讯",
+    "price": "34.70",
+    "change_pct": "+0.00%",
+    "industry": "通信设备"
+  },
+  {
+    "symbol": "600143.SH",
+    "code": "600143",
+    "market": "SH",
+    "name": "金发科技",
+    "price": "16.23",
+    "change_pct": "+0.50%",
+    "industry": "塑料制品"
+  },
+  {
+    "symbol": "600549.SH",
+    "code": "600549",
+    "market": "SH",
+    "name": "厦门钨业",
+    "price": "58.03",
+    "change_pct": "+0.97%",
+    "industry": "小金属"
+  },
+  {
+    "symbol": "601137.SH",
+    "code": "601137",
+    "market": "SH",
+    "name": "博威合金",
+    "price": "18.00",
+    "change_pct": "+2.21%",
+    "industry": "金属新材料"
+  },
+  {
+    "symbol": "300058.SZ",
+    "code": "300058",
+    "market": "SZ",
+    "name": "蓝色光标",
+    "price": "15.88",
+    "change_pct": "+3.52%",
+    "industry": "文化传媒"
+  },
+  {
+    "symbol": "601179.SH",
+    "code": "601179",
+    "market": "SH",
+    "name": "中国西电",
+    "price": "14.07",
+    "change_pct": "+0.29%",
+    "industry": "电网设备"
+  },
+  {
+    "symbol": "601991.SH",
+    "code": "601991",
+    "market": "SH",
+    "name": "大唐发电",
+    "price": "6.39",
+    "change_pct": "+2.24%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "603681.SH",
+    "code": "603681",
+    "market": "SH",
+    "name": "永冠新材",
+    "price": "18.38",
+    "change_pct": "+0.93%",
+    "industry": "化学制品"
+  },
+  {
+    "symbol": "002129.SZ",
+    "code": "002129",
+    "market": "SZ",
+    "name": "TCL中环",
+    "price": "8.90",
+    "change_pct": "+0.34%",
+    "industry": "光伏设备"
+  },
+  {
+    "symbol": "605358.SH",
+    "code": "605358",
+    "market": "SH",
+    "name": "立昂微",
+    "price": "44.88",
+    "change_pct": "+3.22%",
+    "industry": "半导体"
+  },
+  {
+    "symbol": "002845.SZ",
+    "code": "002845",
+    "market": "SZ",
+    "name": "同兴达",
+    "price": "13.00",
+    "change_pct": "+2.04%",
+    "industry": "光学光电子"
+  },
+  {
+    "symbol": "000733.SZ",
+    "code": "000733",
+    "market": "SZ",
+    "name": "振华科技",
+    "price": "41.55",
+    "change_pct": "-0.57%",
+    "industry": "军工电子"
+  },
+  {
+    "symbol": "002079.SZ",
+    "code": "002079",
+    "market": "SZ",
+    "name": "苏州固锝",
+    "price": "9.71",
+    "change_pct": "+1.46%",
+    "industry": "光伏设备"
+  },
+  {
+    "symbol": "600508.SH",
+    "code": "600508",
+    "market": "SH",
+    "name": "上海能源",
+    "price": "8.56",
+    "change_pct": "-1.83%",
+    "industry": "煤炭开采加工"
+  },
+  {
+    "symbol": "002735.SZ",
+    "code": "002735",
+    "market": "SZ",
+    "name": "王子新材",
+    "price": "11.96",
+    "change_pct": "+1.53%",
+    "industry": "包装印刷"
+  },
+  {
+    "symbol": "002156.SZ",
+    "code": "002156",
+    "market": "SZ",
+    "name": "通富微电",
+    "price": "64.72",
+    "change_pct": "+6.17%",
+    "industry": "半导体"
+  },
+  {
+    "symbol": "000630.SZ",
+    "code": "000630",
+    "market": "SZ",
+    "name": "铜陵有色",
+    "price": "6.96",
+    "change_pct": "+5.94%",
+    "industry": "工业金属"
+  },
+  {
+    "symbol": "600888.SH",
+    "code": "600888",
+    "market": "SH",
+    "name": "新疆众和",
+    "price": "10.07",
+    "change_pct": "+2.03%",
+    "industry": "工业金属"
+  },
+  {
+    "symbol": "603989.SH",
+    "code": "603989",
+    "market": "SH",
+    "name": "艾华集团",
+    "price": "29.22",
+    "change_pct": "+4.66%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "600850.SH",
+    "code": "600850",
+    "market": "SH",
+    "name": "电科数字",
+    "price": "15.43",
+    "change_pct": "-1.72%",
+    "industry": "IT服务"
+  },
+  {
+    "symbol": "002766.SZ",
+    "code": "002766",
+    "market": "SZ",
+    "name": "索菱股份",
+    "price": "4.10",
+    "change_pct": "-7.45%",
+    "industry": "汽车零部件"
+  },
+  {
+    "symbol": "603328.SH",
+    "code": "603328",
+    "market": "SH",
+    "name": "依顿电子",
+    "price": "10.85",
+    "change_pct": "+10.04%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "002579.SZ",
+    "code": "002579",
+    "market": "SZ",
+    "name": "中京电子",
+    "price": "15.15",
+    "change_pct": "+8.76%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "002387.SZ",
+    "code": "002387",
+    "market": "SZ",
+    "name": "维信诺",
+    "price": "7.09",
+    "change_pct": "-1.25%",
+    "industry": "光学光电子"
+  },
+  {
+    "symbol": "300065.SZ",
+    "code": "300065",
+    "market": "SZ",
+    "name": "海兰信",
+    "price": "17.16",
+    "change_pct": "+1.84%",
+    "industry": "军工装备"
+  },
+  {
+    "symbol": "002475.SZ",
+    "code": "002475",
+    "market": "SZ",
+    "name": "立讯精密",
+    "price": "56.99",
+    "change_pct": "+1.95%",
+    "industry": "消费电子"
+  },
+  {
+    "symbol": "002428.SZ",
+    "code": "002428",
+    "market": "SZ",
+    "name": "云南锗业",
+    "price": "100.08",
+    "change_pct": "+10.00%",
+    "industry": "小金属"
+  },
+  {
+    "symbol": "002429.SZ",
+    "code": "002429",
+    "market": "SZ",
+    "name": "兆驰股份",
+    "price": "8.15",
+    "change_pct": "+1.75%",
+    "industry": "黑色家电"
+  },
+  {
+    "symbol": "000988.SZ",
+    "code": "000988",
+    "market": "SZ",
+    "name": "华工科技",
+    "price": "106.60",
+    "change_pct": "+3.49%",
+    "industry": "自动化设备"
+  },
+  {
+    "symbol": "002463.SZ",
+    "code": "002463",
+    "market": "SZ",
+    "name": "沪电股份",
+    "price": "125.87",
+    "change_pct": "+7.40%",
+    "industry": "元件"
+  },
+  {
+    "symbol": "601138.SH",
+    "code": "601138",
+    "market": "SH",
+    "name": "工业富联",
+    "price": "68.18",
+    "change_pct": "-0.13%",
+    "industry": "消费电子"
+  },
+  {
+    "symbol": "603203.SH",
+    "code": "603203",
+    "market": "SH",
+    "name": "快克智能",
+    "price": "44.48",
+    "change_pct": "+3.78%",
+    "industry": "自动化设备"
+  },
+  {
+    "symbol": "300806.SZ",
+    "code": "300806",
+    "market": "SZ",
+    "name": "斯迪克",
+    "price": "47.89",
+    "change_pct": "+1.96%",
+    "industry": "塑料制品"
+  },
+  {
+    "symbol": "603618.SH",
+    "code": "603618",
+    "market": "SH",
+    "name": "杭电股份",
+    "price": "27.65",
+    "change_pct": "+4.30%",
+    "industry": "电网设备"
+  },
+  {
+    "symbol": "603083.SH",
+    "code": "603083",
+    "market": "SH",
+    "name": "剑桥科技",
+    "price": "154.78",
+    "change_pct": "+1.30%",
+    "industry": "通信设备"
+  },
+  {
+    "symbol": "001896.SZ",
+    "code": "001896",
+    "market": "SZ",
+    "name": "豫能控股",
+    "price": "13.72",
+    "change_pct": "+4.57%",
+    "industry": "电力"
+  },
+  {
+    "symbol": "002842.SZ",
+    "code": "002842",
+    "market": "SZ",
+    "name": "翔鹭钨业",
+    "price": "38.38",
+    "change_pct": "+3.79%",
+    "industry": "小金属"
+  }
+]

@@ -66,6 +66,31 @@ def financial_history_rows(financials: Dict[str, object]) -> list:
     return rows
 
 
+def valuation_rows(valuation: Dict[str, object]) -> list:
+    """Format preserved legacy valuation snapshots without treating them as live."""
+    labels = {
+        "pe_ttm": "PE TTM",
+        "pb": "PB",
+        "market_value_yi": "市值（亿元）",
+    }
+    rows = []
+    for key in ("pe_ttm", "pb", "market_value_yi"):
+        metric = valuation.get("metrics", {}).get(key)
+        rows.append(
+            {
+                "指标": labels.get(key, key),
+                "数值": (
+                    "数据不可用"
+                    if not metric or metric.get("value") is None
+                    else "{:.2f}".format(float(metric["value"]))
+                ),
+                "来源": metric.get("source") if metric else "未提供",
+                "时间": metric.get("observed_at") if metric else "未提供",
+            }
+        )
+    return rows
+
+
 def render_stock_detail(
     st, detail: Dict[str, object], refresh_financials=None
 ) -> None:
@@ -128,8 +153,15 @@ def render_stock_detail(
                     history_rows, use_container_width=True, hide_index=True
                 )
         st.caption("仅展示已缓存数据，不提供手动编辑；刷新会替换同一报告期的缓存值。")
-    st.subheader("估值")
-    st.info(detail["valuation"]["reason"])
+    st.subheader("估值（历史快照）")
+    valuation = detail["valuation"]
+    if valuation["status"] == "available":
+        st.dataframe(
+            valuation_rows(valuation), use_container_width=True, hide_index=True
+        )
+        st.caption("估值指标来自已留存快照，不视为实时数据。")
+    else:
+        st.info(valuation.get("reason") or "本地暂无可验证的 PE、PB 或市值估值快照。")
 
 
 def _format_metric(metric) -> str:

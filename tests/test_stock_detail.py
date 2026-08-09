@@ -51,7 +51,9 @@ class StockDetailTests(unittest.TestCase):
         self.assertEqual("test", detail["quote"]["source"])
         self.assertTrue(detail["financial_history"]["source_path"].endswith("stock_fundamentals.jsonl"))
         self.assertEqual(216803210.0, detail["fund_flow"]["main_inflow"])
-        self.assertEqual("unavailable", detail["valuation"]["status"])
+        self.assertEqual("available", detail["valuation"]["status"])
+        self.assertEqual(53.64, detail["valuation"]["metrics"]["pe_ttm"]["value"])
+        self.assertEqual(643.13, detail["valuation"]["metrics"]["market_value_yi"]["value"])
 
     def test_returns_normalized_financial_cache_after_refresh(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

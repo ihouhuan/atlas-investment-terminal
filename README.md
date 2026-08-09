@@ -59,7 +59,7 @@ python3 -m backend.services.initialize_atlas
 
 `POST /api/v1/stocks/{symbol}/financials/refresh` 使用 AkShare 同花顺关键指标刷新单只股票的财务数据，并把报告期指标标准化后写入 SQLite 的 `financial_metrics` 缓存表。金额统一换算为人民币元，比率统一保存为百分比、倍数或天数，避免把“万/亿/%”等展示格式混入数据层。
 
-`GET /api/v1/stocks/{symbol}` 返回 `financials` 只读缓存，包含最新报告期、指标来源、刷新时间和最近报告期历史。股票详情页只展示该缓存，不提供手动编辑；页面上的“刷新财务数据”按钮会调用上述 API。
+`GET /api/v1/stocks/{symbol}` 返回 `financials` 只读缓存，包含最新报告期、指标来源、刷新时间和最近报告期历史；估值 PE/PB/市值从历史快照回退展示。选股器优先使用该规范化缓存，ROE 与营收同比已纳入筛选，legacy 仅作为缺失指标的历史回退。股票详情页只展示缓存，不提供手动编辑；页面上的“刷新财务数据”按钮会调用上述 API。
 
 ## 迁移资料
 

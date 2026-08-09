@@ -15,7 +15,9 @@ def screener_rows(result: Dict[str, object]) -> List[Dict[str, str]]:
                 "PE TTM": _format_number(metrics.get("pe_ttm")),
                 "PB": _format_number(metrics.get("pb")),
                 "净利润同比": _format_percent(metrics.get("profit_growth")),
+                "营收同比": _format_percent(metrics.get("revenue_growth")),
                 "毛利率": _format_percent(metrics.get("gross_margin")),
+                "ROE": _format_percent(metrics.get("roe")),
                 "市值（亿元）": _format_number(metrics.get("market_value_yi")),
                 "指标来源": " / ".join(dict.fromkeys(sources.values())) or "未提供",
             }
@@ -24,10 +26,9 @@ def screener_rows(result: Dict[str, object]) -> List[Dict[str, str]]:
 
 
 def render_screener(st, result: Dict[str, object]) -> None:
-    """Render historical-only screening results and coverage limits."""
+    """Render screening results with per-metric provenance and no estimation."""
     st.subheader("选股中心")
-    st.caption("仅使用已留存的历史快照，不将缺失字段估算为财务事实。")
-    st.info("当前数据口径：历史快照。ROE、营收增长尚未具备完整覆盖，暂不作为筛选条件。")
+    st.caption("已刷新股票优先使用 AkShare 规范化缓存，其余使用已留存历史快照；缺失字段不估算。")
     st.caption("候选股票 {} 只。每项指标来源均显示在结果表中。".format(result.get("total", 0)))
     st.dataframe(screener_rows(result), use_container_width=True, hide_index=True)
 

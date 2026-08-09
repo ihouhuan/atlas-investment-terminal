@@ -3,7 +3,11 @@ import unittest
 from app.dashboard.main import market_index_rows
 from app.pages.decision_journal import decision_rows
 from app.pages.screener import screener_rows
-from app.pages.stock_detail import financial_history_rows, financial_metric_rows
+from app.pages.stock_detail import (
+    financial_history_rows,
+    financial_metric_rows,
+    valuation_rows,
+)
 from app.pages.thesis import thesis_rows
 from app.pages.morning_brief import (
     brief_delta_rows,
@@ -150,6 +154,25 @@ class DashboardPresentationTests(unittest.TestCase):
         self.assertEqual("20.24%", rows[0]["净利润同比"])
         self.assertEqual("数据不可用", rows[0]["毛利率"])
         self.assertEqual("tencent / legacy", rows[0]["指标来源"])
+
+    def test_formats_screener_rows_with_normalized_roe_and_revenue_growth(self) -> None:
+        rows = screener_rows(
+            {
+                "items": [
+                    {
+                        "symbol": "000021.SZ",
+                        "name": "深科技",
+                        "sector": "果链/消费电子",
+                        "metrics": {"roe": 1.83, "revenue_growth": 10.67},
+                        "sources": {"roe": "akshare.stock_financial_abstract_ths", "revenue_growth": "akshare.stock_financial_abstract_ths"},
+                    }
+                ]
+            }
+        )
+
+        self.assertEqual("1.83%", rows[0]["ROE"])
+        self.assertEqual("10.67%", rows[0]["营收同比"])
+        self.assertEqual("akshare.stock_financial_abstract_ths", rows[0]["指标来源"])
 
     def test_formats_available_market_data_with_source(self) -> None:
         rows = market_index_rows(
@@ -321,6 +344,27 @@ class DashboardPresentationTests(unittest.TestCase):
         self.assertEqual("2.42 亿", rows[0]["净利润"])
         self.assertEqual("17.07%", rows[0]["销售毛利率"])
         self.assertEqual("41.68%", rows[0]["资产负债率"])
+
+    def test_formats_legacy_valuation_rows_with_provenance(self) -> None:
+        rows = valuation_rows(
+            {
+                "status": "available",
+                "metrics": {
+                    "pe_ttm": {
+                        "value": 53.64,
+                        "source": "tencent",
+                        "observed_at": "2026-08-08T14:25:15.077920",
+                    },
+                    "pb": {"value": 6.1, "source": "tencent", "observed_at": "2026-08-08T14:25:15.077920"},
+                    "market_value_yi": {"value": 643.13, "source": "tencent", "observed_at": "2026-08-08T14:25:15.077920"},
+                },
+            }
+        )
+
+        self.assertEqual("PE TTM", rows[0]["指标"])
+        self.assertEqual("53.64", rows[0]["数值"])
+        self.assertEqual("tencent", rows[0]["来源"])
+        self.assertEqual("643.13", rows[2]["数值"])
 
 
 if __name__ == "__main__":

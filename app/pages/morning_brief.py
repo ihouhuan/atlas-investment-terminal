@@ -1,8 +1,10 @@
 from datetime import date
 from typing import Dict, List
 
-from app.dashboard.ui import humanize_datetime, kpi_cards, section_title
+from app.dashboard.ui import humanize_datetime, section_title
 from backend.services.brief_report import brief_delta_rows, morning_brief_markdown
+from backend.services.intelligence import build_morning_intelligence
+from app.pages.morning_intelligence import render_morning_intelligence
 
 
 def morning_brief_comparison_markdown(delta: Dict[str, object]) -> str:
@@ -151,52 +153,17 @@ def render_morning_brief(
             ),
         )
     )
+    integrity = portfolio["research_integrity"]
+    render_morning_intelligence(
+        st,
+        build_morning_intelligence(market, portfolio, open_actions),
+    )
     st.subheader("待完成行动项")
     due_window = st.selectbox("行动项截止日筛选", ["all", "today", "week"], format_func=lambda value: {"all": "全部待办", "today": "今日到期", "week": "本周到期"}[value])
     if due_window != "all":
         open_actions = load_open_actions(due_window)
     summary = open_actions.get("summary", {})
     st.caption("完成率：{}%（已完成 {} / 总计 {}）".format(summary.get("completion_rate", 0.0), summary.get("completed", 0), summary.get("total", 0)))
-    integrity = portfolio["research_integrity"]
-    kpi_cards(
-        st,
-        [
-            {
-                "label": "待完成行动",
-                "value": open_actions.get("total", 0),
-                "note": "完成率 {}%".format(summary.get("completion_rate", 0.0)),
-                "tone": "danger" if open_actions.get("total", 0) else "good",
-            },
-            {
-                "label": "风险违规",
-                "value": portfolio["risk"]["violation_count"],
-                "note": "按当前生效风险预算",
-                "tone": "danger" if portfolio["risk"]["violation_count"] else "good",
-            },
-            {
-                "label": "缺少 Thesis",
-                "value": integrity["missing_thesis_count"],
-                "note": "待补研究逻辑",
-                "tone": "warn" if integrity["missing_thesis_count"] else "good",
-            },
-            {
-                "label": "候选股票",
-                "value": screener.get("total", 0),
-                "note": "来自历史快照",
-                "tone": "neutral",
-            },
-        ],
-    )
-    summary_parts = []
-    open_total = open_actions.get("total", 0)
-    risk_count = portfolio["risk"]["violation_count"]
-    thesis_missing = integrity["missing_thesis_count"]
-    summary_parts.append(
-        "{} 项复盘待办".format(open_total) if open_total else "暂无待办"
-    )
-    summary_parts.append("{} 项风险违规".format(risk_count))
-    summary_parts.append("{} 个持仓缺 Thesis".format(thesis_missing))
-    st.info("今日状态：" + "；".join(summary_parts) + "。")
     if open_actions.get("items"):
         st.warning("有 {} 项复盘行动待处理。".format(open_actions["total"]))
         st.dataframe(open_action_rows(open_actions), width="stretch", hide_index=True)

@@ -14,6 +14,7 @@ class UISmokeScriptTests(unittest.TestCase):
         self.assertTrue(script.stat().st_mode & stat.S_IXUSR)
         content = script.read_text(encoding="utf-8")
         for expected in (
+            "ATLAS MORNING INTELLIGENCE",
             "待完成行动项",
             "A 股市场状态",
             "候选股票",

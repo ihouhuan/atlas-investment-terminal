@@ -27,7 +27,8 @@ wait_for_page() {
 }
 
 "$PWCLI" open "$STREAMLIT_URL" >/dev/null
-wait_for_page "晨报" "待完成行动项"
+wait_for_page "晨报驾驶舱" "ATLAS MORNING INTELLIGENCE"
+wait_for_page "晨报待办" "待完成行动项"
 
 "$PWCLI" click e24 >/dev/null
 wait_for_page "市场概览" "A 股市场状态"

@@ -261,128 +261,19 @@ def render_morning_brief(
         st.dataframe(brief_delta_rows(delta), width="stretch", hide_index=True)
     else:
         st.info(delta.get("reason", "保存至少两份本地晨报后可比较风险变化。"))
-    st.subheader("本地晨报历史")
-    history_items = history.get("items", [])
-    if not history_items:
-        st.info("尚无本地晨报快照。保存晨报后可在此选择任意两份进行复盘。")
-    else:
-        st.caption("共 {} 份本地晨报；历史快照只读。".format(history.get("total", len(history_items))))
-        st.dataframe(brief_history_rows(history), width="stretch", hide_index=True)
-        review_options = [item["id"] for item in history_items]
-        review_target_id = st.selectbox(
-            "选择需复盘的晨报",
-            review_options,
-            format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
+    history_tab = st.tabs(["晨报历史与复盘"])[0]
+    with history_tab:
+        delta = render_morning_brief_history(
+            st,
+            history,
+            decision_journal,
+            update_review,
+            load_delta,
+            load_actions,
+            create_action,
+            update_action,
+            delta,
         )
-        review_target = next(item for item in history_items if item["id"] == review_target_id)
-        if review_target.get("review_status") == "reviewed":
-            st.caption("该晨报已于 {} 复盘。".format(review_target.get("reviewed_at") or "未记录日期"))
-            review_notes = st.text_area(
-                "复盘备注",
-                value=review_target.get("review_notes") or "",
-                key="review_notes_{}".format(review_target_id),
-            )
-            if st.button("保存复盘备注"):
-                try:
-                    update_review(review_target_id, True, review_target.get("reviewed_at"), review_notes)
-                except Exception as error:
-                    st.error("无法保存复盘备注：{}".format(error))
-                else:
-                    st.rerun()
-            action_text = st.text_input("后续行动项", key="action_text_{}".format(review_target_id))
-            decision_items = decision_journal.get("items", [])
-            decision_options = [""] + [item["legacy_key"] for item in decision_items]
-            decision_key = st.selectbox(
-                "关联决策日志（可选）",
-                decision_options,
-                format_func=lambda key: "不关联" if not key else next(
-                    "{} · {}".format(item["legacy_key"], item["symbol"] or "未提供")
-                    for item in decision_items if item["legacy_key"] == key
-                ),
-                key="action_decision_{}".format(review_target_id),
-            )
-            priority = st.selectbox("优先级", ["high", "normal", "low"], format_func=lambda value: {"high": "高", "normal": "普通", "low": "低"}[value], key="action_priority_{}".format(review_target_id))
-            set_due_date = st.checkbox("设置截止日期", key="action_due_enabled_{}".format(review_target_id))
-            due_date = st.date_input("截止日期", value=date.today(), key="action_due_{}".format(review_target_id)).isoformat() if set_due_date else None
-            if st.button("添加后续行动项"):
-                try:
-                    create_action(review_target_id, action_text, decision_key or None, due_date, priority)
-                except Exception as error:
-                    st.error("无法添加行动项：{}".format(error))
-                else:
-                    st.rerun()
-            actions = load_actions(review_target_id).get("items", [])
-            if actions:
-                st.caption("复盘行动清单")
-                st.dataframe(
-                    [
-                        {
-                            "行动项": item["action_text"],
-                            "关联决策": item["decision_legacy_key"] or "未关联",
-                            "优先级": {"high": "高", "normal": "普通", "low": "低"}.get(item.get("priority"), "普通"),
-                            "截止日期": item.get("due_date") or "未设置",
-                            "状态": "已完成" if item["status"] == "completed" else "待完成",
-                            "完成时间": item["completed_at"] or "未完成",
-                        }
-                        for item in actions
-                    ],
-                    width="stretch",
-                    hide_index=True,
-                )
-                for item in actions:
-                    target_completed = item["status"] != "completed"
-                    label = "标记完成" if target_completed else "重新打开"
-                    if st.button(label + "：" + item["action_text"], key="action_status_{}".format(item["id"])):
-                        try:
-                            update_action(review_target_id, item["id"], target_completed)
-                        except Exception as error:
-                            st.error("无法更新行动项：{}".format(error))
-                        else:
-                            st.rerun()
-            if st.button("标记为未复盘"):
-                try:
-                    update_review(review_target_id, False, None, None)
-                except Exception as error:
-                    st.error("无法更新复盘状态：{}".format(error))
-                else:
-                    st.rerun()
-        else:
-            reviewed_at = st.date_input("复盘日期", value=date.today())
-            review_notes = st.text_area("复盘备注（可选）", key="review_notes_{}".format(review_target_id))
-            if st.button("标记为已复盘"):
-                try:
-                    update_review(review_target_id, True, reviewed_at.isoformat(), review_notes)
-                except Exception as error:
-                    st.error("无法更新复盘状态：{}".format(error))
-                else:
-                    st.rerun()
-        if len(history_items) >= 2:
-            options = [item["id"] for item in history_items]
-            current_column, previous_column = st.columns(2)
-            current_id = current_column.selectbox(
-                "当前晨报",
-                options,
-                format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
-            )
-            previous_id = previous_column.selectbox(
-                "对比晨报",
-                options,
-                index=1,
-                format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
-            )
-            if current_id == previous_id:
-                st.warning("请选择两份不同的晨报快照进行比较。")
-            else:
-                selected_delta = load_delta(current_id, previous_id)
-                st.caption("已按选定的两份晨报更新风险变化摘要。")
-                st.dataframe(brief_delta_rows(selected_delta), width="stretch", hide_index=True)
-                st.download_button(
-                    "下载差异复盘 Markdown",
-                    morning_brief_comparison_markdown(selected_delta),
-                    file_name="atlas-morning-comparison-{}-{}.md".format(current_id, previous_id),
-                    mime="text/markdown",
-                )
-                delta = selected_delta
     st.download_button(
         "下载 Markdown 晨报",
         morning_brief_markdown(market, portfolio, screener, delta),
@@ -392,3 +283,140 @@ def render_morning_brief(
     st.subheader("筛选候选（历史快照）")
     st.caption("候选 {} 只；ROE、营收增长仍无完整覆盖。".format(screener["total"]))
     st.dataframe([{"股票": item["name"], "代码": item["symbol"], "行业主题": item["sector"]} for item in screener["items"][:10]], width="stretch", hide_index=True)
+
+
+def render_morning_brief_history(
+    st,
+    history: Dict[str, object],
+    decision_journal: Dict[str, object],
+    update_review,
+    load_delta,
+    load_actions,
+    create_action,
+    update_action,
+    delta: Dict[str, object],
+) -> Dict[str, object]:
+    """Render local morning-brief history and review workflows inside the history tab."""
+    st.subheader("本地晨报历史")
+    history_items = history.get("items", [])
+    if not history_items:
+        st.info("尚无本地晨报快照。保存晨报后可在此选择任意两份进行复盘。")
+        return delta
+    st.caption("共 {} 份本地晨报；历史快照只读。".format(history.get("total", len(history_items))))
+    st.dataframe(brief_history_rows(history), width="stretch", hide_index=True)
+    review_options = [item["id"] for item in history_items]
+    review_target_id = st.selectbox(
+        "选择需复盘的晨报",
+        review_options,
+        format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
+    )
+    review_target = next(item for item in history_items if item["id"] == review_target_id)
+    if review_target.get("review_status") == "reviewed":
+        st.caption("该晨报已于 {} 复盘。".format(review_target.get("reviewed_at") or "未记录日期"))
+        review_notes = st.text_area(
+            "复盘备注",
+            value=review_target.get("review_notes") or "",
+            key="review_notes_{}".format(review_target_id),
+        )
+        if st.button("保存复盘备注"):
+            try:
+                update_review(review_target_id, True, review_target.get("reviewed_at"), review_notes)
+            except Exception as error:
+                st.error("无法保存复盘备注：{}".format(error))
+            else:
+                st.rerun()
+        action_text = st.text_input("后续行动项", key="action_text_{}".format(review_target_id))
+        decision_items = decision_journal.get("items", [])
+        decision_options = [""] + [item["legacy_key"] for item in decision_items]
+        decision_key = st.selectbox(
+            "关联决策日志（可选）",
+            decision_options,
+            format_func=lambda key: "不关联" if not key else next(
+                "{} · {}".format(item["legacy_key"], item["symbol"] or "未提供")
+                for item in decision_items if item["legacy_key"] == key
+            ),
+            key="action_decision_{}".format(review_target_id),
+        )
+        priority = st.selectbox("优先级", ["high", "normal", "low"], format_func=lambda value: {"high": "高", "normal": "普通", "low": "低"}[value], key="action_priority_{}".format(review_target_id))
+        set_due_date = st.checkbox("设置截止日期", key="action_due_enabled_{}".format(review_target_id))
+        due_date = st.date_input("截止日期", value=date.today(), key="action_due_{}".format(review_target_id)).isoformat() if set_due_date else None
+        if st.button("添加后续行动项"):
+            try:
+                create_action(review_target_id, action_text, decision_key or None, due_date, priority)
+            except Exception as error:
+                st.error("无法添加行动项：{}".format(error))
+            else:
+                st.rerun()
+        actions = load_actions(review_target_id).get("items", [])
+        if actions:
+            st.caption("复盘行动清单")
+            st.dataframe(
+                [
+                    {
+                        "行动项": item["action_text"],
+                        "关联决策": item["decision_legacy_key"] or "未关联",
+                        "优先级": {"high": "高", "normal": "普通", "low": "低"}.get(item.get("priority"), "普通"),
+                        "截止日期": item.get("due_date") or "未设置",
+                        "状态": "已完成" if item["status"] == "completed" else "待完成",
+                        "完成时间": item["completed_at"] or "未完成",
+                    }
+                    for item in actions
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+            for item in actions:
+                target_completed = item["status"] != "completed"
+                label = "标记完成" if target_completed else "重新打开"
+                if st.button(label + "：" + item["action_text"], key="action_status_{}".format(item["id"])):
+                    try:
+                        update_action(review_target_id, item["id"], target_completed)
+                    except Exception as error:
+                        st.error("无法更新行动项：{}".format(error))
+                    else:
+                        st.rerun()
+        if st.button("标记为未复盘"):
+            try:
+                update_review(review_target_id, False, None, None)
+            except Exception as error:
+                st.error("无法更新复盘状态：{}".format(error))
+            else:
+                st.rerun()
+    else:
+        reviewed_at = st.date_input("复盘日期", value=date.today())
+        review_notes = st.text_area("复盘备注（可选）", key="review_notes_{}".format(review_target_id))
+        if st.button("标记为已复盘"):
+            try:
+                update_review(review_target_id, True, reviewed_at.isoformat(), review_notes)
+            except Exception as error:
+                st.error("无法更新复盘状态：{}".format(error))
+            else:
+                st.rerun()
+    if len(history_items) >= 2:
+        options = [item["id"] for item in history_items]
+        current_column, previous_column = st.columns(2)
+        current_id = current_column.selectbox(
+            "当前晨报",
+            options,
+            format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
+        )
+        previous_id = previous_column.selectbox(
+            "对比晨报",
+            options,
+            index=1,
+            format_func=lambda snapshot_id: "#{} · {}".format(snapshot_id, next(item["created_at"] for item in history_items if item["id"] == snapshot_id)),
+        )
+        if current_id == previous_id:
+            st.warning("请选择两份不同的晨报快照进行比较。")
+        else:
+            selected_delta = load_delta(current_id, previous_id)
+            st.caption("已按选定的两份晨报更新风险变化摘要。")
+            st.dataframe(brief_delta_rows(selected_delta), width="stretch", hide_index=True)
+            st.download_button(
+                "下载差异复盘 Markdown",
+                morning_brief_comparison_markdown(selected_delta),
+                file_name="atlas-morning-comparison-{}-{}.md".format(current_id, previous_id),
+                mime="text/markdown",
+            )
+            delta = selected_delta
+    return delta

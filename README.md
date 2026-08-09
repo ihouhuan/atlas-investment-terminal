@@ -89,6 +89,8 @@ python3 -m backend.services.initialize_atlas
 
 `/api/v1/market/overview` 使用 AkShare 的 `stock_zh_a_spot_em` 全市场快照计算上涨/下跌/平盘家数、涨停/跌停家数和全市场成交额，Eastmoney 不可用时回退到新浪 `stock_zh_a_spot`。涨停/跌停按主板、创业板/科创板、北交所和 ST 的涨跌幅限制分别判断；所有上游不可用时返回 `status: "unavailable"` 并附原因，不估算缺失值。
 
+成功的广度快照会写入 SQLite 的 `market_breadth_cache` 表，默认 15 分钟 TTL。缓存命中时直接返回，上游失败时回退最近一次成功快照，并在页面标记为“历史缓存”。
+
 ## 每日流水线
 
 统一入口一次完成：拉取并持久化行情、计算市场广度、刷新财务缓存（可选）、保存本地晨报快照、生成 Markdown 报告和机器可读运行清单。

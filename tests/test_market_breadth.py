@@ -1,9 +1,14 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
 
+from backend.database.connection import connect
+from backend.database.schema import initialize_database
 from backend.services.market_breadth import (
     AkshareMarketBreadthProvider,
+    CachedMarketBreadthProvider,
     FallbackMarketBreadthProvider,
     MarketBreadthError,
     SinaMarketBreadthProvider,
@@ -87,6 +92,74 @@ class MarketBreadthTests(unittest.TestCase):
 
         self.assertEqual("available", breadth["status"])
         self.assertEqual(62.0, breadth["turnover_yi"])
+
+    def test_cached_provider_serves_fresh_snapshot_without_refetch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "atlas.db"
+            connection = connect(database_path)
+            initialize_database(connection)
+            connection.close()
+            live = CountingBreadthProvider()
+            provider = CachedMarketBreadthProvider(
+                live, database_path, ttl_seconds=900
+            )
+
+            first = provider.get_breadth()
+            second = provider.get_breadth()
+
+            self.assertEqual("available", first["status"])
+            self.assertEqual(1, live.calls)
+            self.assertIsNotNone(second["cached_at"])
+            self.assertEqual("available", second["status"])
+
+    def test_cached_provider_falls_back_when_live_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "atlas.db"
+            connection = connect(database_path)
+            initialize_database(connection)
+            connection.close()
+            CachedMarketBreadthProvider(
+                CountingBreadthProvider(), database_path
+            ).get_breadth()
+
+            provider = CachedMarketBreadthProvider(
+                CountingBreadthProvider(error=MarketBreadthError("offline")),
+                database_path,
+                ttl_seconds=0,
+            )
+            result = provider.get_breadth()
+
+            self.assertEqual("available", result["status"])
+            self.assertIsNotNone(result["cached_at"])
+            self.assertIn("使用最近成功快照", result["reason"])
+
+    def test_cached_provider_refetches_after_ttl(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "atlas.db"
+            connection = connect(database_path)
+            initialize_database(connection)
+            connection.close()
+            live = CountingBreadthProvider()
+            provider = CachedMarketBreadthProvider(
+                live, database_path, ttl_seconds=0
+            )
+
+            provider.get_breadth()
+            provider.get_breadth()
+
+            self.assertEqual(2, live.calls)
+
+
+class CountingBreadthProvider:
+    def __init__(self, error=None) -> None:
+        self.calls = 0
+        self.error = error
+
+    def get_breadth(self):
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return compute_market_breadth(sample_spot_frame())
 
 
 if __name__ == "__main__":

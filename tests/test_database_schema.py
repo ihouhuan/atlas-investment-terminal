@@ -34,6 +34,7 @@ class DatabaseSchemaTests(unittest.TestCase):
                 "import_runs",
                 "financial_metrics",
                 "market_quote_cache",
+                "market_breadth_cache",
             }.issubset(table_names)
         )
 

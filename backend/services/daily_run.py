@@ -15,6 +15,7 @@ from backend.services.financial_refresh import (
 )
 from backend.services.market_breadth import (
     AkshareMarketBreadthProvider,
+    CachedMarketBreadthProvider,
     FallbackMarketBreadthProvider,
     MarketBreadthProvider,
     SinaMarketBreadthProvider,
@@ -118,9 +119,12 @@ def main(
                 database_path=parsed.database,
             )
         if breadth_provider is None:
-            breadth_provider = FallbackMarketBreadthProvider(
-                AkshareMarketBreadthProvider(),
-                SinaMarketBreadthProvider(),
+            breadth_provider = CachedMarketBreadthProvider(
+                FallbackMarketBreadthProvider(
+                    AkshareMarketBreadthProvider(),
+                    SinaMarketBreadthProvider(),
+                ),
+                database_path=parsed.database,
             )
         if financial_provider is None:
             financial_provider = AkshareFinancialDataProvider()

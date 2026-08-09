@@ -244,9 +244,10 @@ def run_dashboard() -> None:
             else format(float(turnover), ",.2f"),
         )
         st.caption(
-            "市场广度来源：{} · 时间：{}".format(
+            "市场广度来源：{} · 时间：{} · {}".format(
                 breadth.get("source") or "未提供",
                 breadth.get("as_of") or "未提供",
+                "历史缓存" if breadth.get("cached_at") else "实时",
             )
         )
 

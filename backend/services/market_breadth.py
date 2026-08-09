@@ -1,4 +1,7 @@
+import sqlite3
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Callable, Dict, Optional
 
 import pandas as pd
@@ -82,6 +85,118 @@ class FallbackMarketBreadthProvider:
         raise MarketBreadthError("All market breadth providers failed: " + "; ".join(errors))
 
 
+class CachedMarketBreadthProvider:
+    """Serve fresh breadth from SQLite and fall back to the last successful snapshot."""
+
+    CACHE_TABLE = "market_breadth_cache"
+
+    def __init__(
+        self,
+        provider: MarketBreadthProvider,
+        database_path: Path = Path("data/atlas.db"),
+        ttl_seconds: float = 900.0,
+    ) -> None:
+        self._provider = provider
+        self._database_path = Path(database_path)
+        self._ttl_seconds = ttl_seconds
+
+    def get_breadth(self) -> Dict[str, object]:
+        cached = self._load_latest()
+        if cached is not None and self._is_fresh(cached["cached_at"]):
+            return self._cached_response(cached)
+        try:
+            breadth = self._provider.get_breadth()
+        except MarketBreadthError as error:
+            if cached is not None:
+                result = self._cached_response(cached)
+                result["reason"] = "使用最近成功快照；{}".format(error)
+                return result
+            raise
+        self._save(breadth)
+        return breadth
+
+    def cache_info(self) -> Dict[str, object]:
+        cached = self._load_latest()
+        if cached is None:
+            return {"breadth_cached": False}
+        return {
+            "breadth_cached": True,
+            "breadth_age_seconds": max(
+                0.0, time.time() - _timestamp(cached["cached_at"])
+            ),
+        }
+
+    def _is_fresh(self, cached_at: str) -> bool:
+        try:
+            age_seconds = time.time() - _timestamp(cached_at)
+        except (TypeError, ValueError):
+            return False
+        return 0 <= age_seconds < self._ttl_seconds
+
+    def _load_latest(self) -> Optional[Dict[str, object]]:
+        connection = self._connect()
+        try:
+            row = connection.execute(
+                """
+                SELECT as_of, advancers, decliners, unchanged, limit_up,
+                       limit_down, turnover_yi, source, cached_at, status
+                FROM market_breadth_cache
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        finally:
+            connection.close()
+        return dict(row) if row else None
+
+    def _save(self, breadth: Dict[str, object]) -> None:
+        connection = self._connect()
+        try:
+            with connection:
+                connection.execute("DELETE FROM market_breadth_cache")
+                connection.execute(
+                    """
+                    INSERT INTO market_breadth_cache (
+                        as_of, advancers, decliners, unchanged, limit_up,
+                        limit_down, turnover_yi, source, cached_at, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        breadth.get("as_of"),
+                        breadth.get("advancers"),
+                        breadth.get("decliners"),
+                        breadth.get("unchanged"),
+                        breadth.get("limit_up"),
+                        breadth.get("limit_down"),
+                        breadth.get("turnover_yi"),
+                        breadth.get("source"),
+                        datetime.now(timezone.utc).isoformat(),
+                        breadth.get("status"),
+                    ),
+                )
+        finally:
+            connection.close()
+
+    def _cached_response(self, cached: Dict[str, object]) -> Dict[str, object]:
+        return {
+            "status": "available",
+            "as_of": cached["as_of"],
+            "advancers": cached["advancers"],
+            "decliners": cached["decliners"],
+            "unchanged": cached["unchanged"],
+            "limit_up": cached["limit_up"],
+            "limit_down": cached["limit_down"],
+            "turnover_yi": cached["turnover_yi"],
+            "source": cached["source"],
+            "cached_at": cached["cached_at"],
+        }
+
+    def _connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(str(self._database_path))
+        connection.row_factory = sqlite3.Row
+        return connection
+
+
 def compute_market_breadth(frame: pd.DataFrame) -> Dict[str, object]:
     """Compute advancers, decliners, limit moves and turnover from a spot frame."""
     pct_change = pd.to_numeric(frame.get("涨跌幅"), errors="coerce")
@@ -105,3 +220,10 @@ def compute_market_breadth(frame: pd.DataFrame) -> Dict[str, object]:
         "total": int(pct_change.notna().sum()),
         "source": SOURCE,
     }
+
+
+def _timestamp(value: str) -> float:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()

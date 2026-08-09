@@ -122,6 +122,20 @@ CREATE TABLE IF NOT EXISTS market_quote_cache (
     cached_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS market_breadth_cache (
+    id INTEGER PRIMARY KEY,
+    as_of TEXT NOT NULL,
+    advancers INTEGER,
+    decliners INTEGER,
+    unchanged INTEGER,
+    limit_up INTEGER,
+    limit_down INTEGER,
+    turnover_yi REAL,
+    source TEXT NOT NULL,
+    cached_at TEXT NOT NULL,
+    status TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS thesis_versions (
     id INTEGER PRIMARY KEY,
     stock_id INTEGER NOT NULL REFERENCES stocks(id),

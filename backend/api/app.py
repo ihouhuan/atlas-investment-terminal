@@ -17,6 +17,7 @@ from backend.services.financial_refresh import (
 )
 from backend.services.market_breadth import (
     AkshareMarketBreadthProvider,
+    CachedMarketBreadthProvider,
     FallbackMarketBreadthProvider,
     MarketBreadthProvider,
     SinaMarketBreadthProvider,
@@ -128,9 +129,12 @@ def create_app(
     )
     financial_data_provider = financial_provider or AkshareFinancialDataProvider()
     stock_data_provider = stock_provider or AkshareStockMetadataProvider()
-    market_breadth_provider = breadth_provider or FallbackMarketBreadthProvider(
-        AkshareMarketBreadthProvider(),
-        SinaMarketBreadthProvider(),
+    market_breadth_provider = breadth_provider or CachedMarketBreadthProvider(
+        FallbackMarketBreadthProvider(
+            AkshareMarketBreadthProvider(),
+            SinaMarketBreadthProvider(),
+        ),
+        database_path=database_path,
     )
 
     @application.get("/health")

@@ -129,6 +129,8 @@ scripts/ui_smoke.sh
 
 脚本默认访问 `http://localhost:8501`，可通过 `STREAMLIT_URL` 覆盖。
 
+GitHub Actions 的 `ui-smoke` job 会在 Linux 上安装 Playwright 浏览器、启动 API 与 Streamlit，再自动运行该脚本。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

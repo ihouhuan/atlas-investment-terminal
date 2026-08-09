@@ -17,3 +17,38 @@ jobs:
         run: pip install -r requirements.lock.txt
       - name: Run test suite
         run: python -m unittest discover -s tests -v
+
+  ui-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: pip install -r requirements.lock.txt
+      - name: Install Playwright browser
+        run: npx --yes playwright install --with-deps chromium
+      - name: Start Atlas API
+        run: |
+          .venv/bin/uvicorn backend.api.app:app --host 127.0.0.1 --port 8000 > /tmp/atlas_api.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8000/health && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8000/health >/dev/null
+      - name: Start Streamlit
+        run: |
+          ATLAS_API_URL=http://127.0.0.1:8000 .venv/bin/streamlit run app/dashboard/main.py --server.port 8501 --server.headless true > /tmp/streamlit.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:8501 && break
+            sleep 2
+          done
+          curl -sf -o /dev/null http://127.0.0.1:8501
+      - name: Run UI smoke
+        run: scripts/ui_smoke.sh

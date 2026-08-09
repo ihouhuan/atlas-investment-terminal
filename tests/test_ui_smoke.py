@@ -23,6 +23,14 @@ class UISmokeScriptTests(unittest.TestCase):
             "组合与风险",
         ):
             self.assertIn(expected, content)
+        self.assertIn("scripts/playwright_cli.sh", content)
+
+        wrapper = PROJECT_ROOT / "scripts" / "playwright_cli.sh"
+        self.assertTrue(wrapper.is_file())
+        self.assertTrue(wrapper.stat().st_mode & stat.S_IXUSR)
+
+        workflow = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+        self.assertIn("ui-smoke", workflow.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

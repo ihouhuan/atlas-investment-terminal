@@ -64,6 +64,12 @@ jobs:
             tail -200 /tmp/streamlit.log || true
             echo "=== atlas_api.log ==="
             tail -200 /tmp/atlas_api.log || true
+            UI_B64="$(tail -120 /tmp/ui_smoke.log | base64 -w0 | head -c 8000)"
+            STREAMLIT_B64="$(tail -120 /tmp/streamlit.log | base64 -w0 | head -c 4000)"
+            API_B64="$(tail -120 /tmp/atlas_api.log | base64 -w0 | head -c 4000)"
+            echo "::error file=scripts/ui_smoke.sh,title=UI smoke ui log::${UI_B64}"
+            echo "::error file=app/dashboard/main.py,title=UI smoke streamlit log::${STREAMLIT_B64}"
+            echo "::error file=backend/api/app.py,title=UI smoke api log::${API_B64}"
             exit $UI_EXIT
           fi
       - name: Upload UI smoke diagnostics

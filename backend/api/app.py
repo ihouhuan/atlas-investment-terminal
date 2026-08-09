@@ -20,6 +20,7 @@ from backend.services.market_data import (
     CachedMarketDataProvider,
     FallbackMarketDataProvider,
     MarketDataProvider,
+    PersistentMarketDataProvider,
     TencentMarketDataProvider,
 )
 from backend.services.morning_brief import (
@@ -109,8 +110,14 @@ def create_app(
     finally:
         schema_connection.close()
     application = FastAPI(title="Atlas Investment Terminal API", version="2.0.0")
-    market_data_provider = provider or CachedMarketDataProvider(
-        FallbackMarketDataProvider(TencentMarketDataProvider(), AkshareMarketDataProvider())
+    market_data_provider = provider or PersistentMarketDataProvider(
+        CachedMarketDataProvider(
+            FallbackMarketDataProvider(
+                TencentMarketDataProvider(),
+                AkshareMarketDataProvider(),
+            )
+        ),
+        database_path=database_path,
     )
     financial_data_provider = financial_provider or AkshareFinancialDataProvider()
     stock_data_provider = stock_provider or AkshareStockMetadataProvider()
@@ -122,15 +129,15 @@ def create_app(
     @application.get("/api/v1/market/overview")
     def market_overview() -> dict:
         overview = build_market_overview(market_data_provider)
-        overview["cache"] = market_data_provider.cache_info() if isinstance(market_data_provider, CachedMarketDataProvider) else None
+        overview["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
         return overview
 
     @application.post("/api/v1/market/refresh")
     def refresh_market_overview() -> dict:
-        if isinstance(market_data_provider, CachedMarketDataProvider):
+        if hasattr(market_data_provider, "clear_cache"):
             market_data_provider.clear_cache()
         overview = build_market_overview(market_data_provider)
-        overview["cache"] = market_data_provider.cache_info() if isinstance(market_data_provider, CachedMarketDataProvider) else None
+        overview["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
         return overview
 
     @application.get("/api/v1/morning-brief/overview")
@@ -138,7 +145,7 @@ def create_app(
         connection = connect(database_path)
         try:
             market = build_market_overview(market_data_provider)
-            market["cache"] = market_data_provider.cache_info() if isinstance(market_data_provider, CachedMarketDataProvider) else None
+            market["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
             return {
                 "market": market,
                 "portfolio": build_portfolio_overview(connection),

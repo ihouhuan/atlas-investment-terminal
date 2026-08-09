@@ -207,6 +207,25 @@ class DashboardPresentationTests(unittest.TestCase):
         self.assertEqual("+1.23%", rows[0]["涨跌幅"])
         self.assertEqual("tencent_qt.gtimg.cn", rows[0]["来源"])
 
+    def test_formats_cached_market_data_as_historical_cache(self) -> None:
+        rows = market_index_rows(
+            {
+                "indices": [
+                    {
+                        "name": "沪深300",
+                        "price": 4000.12,
+                        "change_pct": 1.23,
+                        "status": "available",
+                        "source": "tencent_qt.gtimg.cn",
+                        "observed_at": "20260809103000",
+                        "cached_at": "2026-08-09T10:30:00+00:00",
+                    }
+                ]
+            }
+        )
+
+        self.assertEqual("历史缓存", rows[0]["状态"])
+
     def test_formats_portfolio_weights_and_pnl_for_display(self) -> None:
         rows = portfolio_position_rows(
             {

@@ -35,7 +35,13 @@ def market_index_rows(overview: Dict[str, object]) -> List[Dict[str, str]]:
                 "涨跌幅": "数据不可用"
                 if change_pct is None
                 else "{:+.2f}%".format(float(change_pct)),
-                "状态": "可用" if index.get("status") == "available" else "数据不可用",
+                "状态": (
+                    "历史缓存"
+                    if index.get("status") == "available" and index.get("cached_at")
+                    else "可用"
+                    if index.get("status") == "available"
+                    else "数据不可用"
+                ),
                 "来源": index.get("source") or "未提供",
                 "时间": index.get("observed_at") or "未提供",
             }
@@ -243,7 +249,11 @@ def run_dashboard() -> None:
                 "价格": quote["price"] if quote["price"] is not None else "数据不可用",
                 "涨跌幅": quote["change_pct"] if quote["change_pct"] is not None else "数据不可用",
                 "行情来源": quote["source"],
-                "状态": quote["status"],
+                "状态": (
+                    "历史缓存"
+                    if quote.get("cached_at") and quote["status"] == "available"
+                    else quote["status"]
+                ),
             }
         )
     st.caption("股票池共 {} 只；当前展示前 {} 只。".format(watchlist["total"], len(table_rows)))

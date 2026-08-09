@@ -1,6 +1,14 @@
+import tempfile
 import unittest
+from pathlib import Path
 
-from backend.services.market_data import TencentMarketDataProvider
+from backend.database.connection import connect
+from backend.database.schema import initialize_database
+from backend.services.market_data import (
+    MarketQuote,
+    PersistentMarketDataProvider,
+    TencentMarketDataProvider,
+)
 
 
 def tencent_line(symbol: str, name: str, price: str, change: str, change_pct: str) -> str:
@@ -54,6 +62,100 @@ class TencentMarketDataProviderTests(unittest.TestCase):
         self.assertEqual(43.13, quote.change)
         self.assertEqual(0.93, quote.change_pct)
         self.assertAlmostEqual(4651.31, quote.previous_close)
+
+
+class StubLiveQuoteProvider:
+    def get_quotes(self, symbols):
+        return {
+            symbol: MarketQuote(
+                symbol=symbol,
+                name="测试标的",
+                price=100.0,
+                previous_close=99.0,
+                change=1.0,
+                change_pct=1.01,
+                observed_at="20260809103000",
+                fetched_at="2026-08-09T10:30:00+00:00",
+                source="stub_live",
+                status="available",
+            )
+            for symbol in symbols
+        }
+
+
+class StubUnavailableQuoteProvider:
+    def get_quotes(self, symbols):
+        return {
+            symbol: MarketQuote(
+                symbol=symbol,
+                name=None,
+                price=None,
+                previous_close=None,
+                change=None,
+                change_pct=None,
+                observed_at=None,
+                fetched_at="2026-08-09T10:31:00+00:00",
+                source="stub_offline",
+                status="unavailable",
+                error="offline",
+            )
+            for symbol in symbols
+        }
+
+
+class FailingQuoteProvider:
+    def get_quotes(self, symbols):
+        raise ConnectionError("offline")
+
+
+class PersistentMarketDataProviderTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.database_path = Path(self.temporary_directory.name) / "atlas.db"
+        connection = connect(self.database_path)
+        initialize_database(connection)
+        connection.close()
+        self.addCleanup(self.temporary_directory.cleanup)
+
+    def test_saves_live_quotes_and_falls_back_after_restart(self) -> None:
+        persistent = PersistentMarketDataProvider(
+            StubLiveQuoteProvider(), self.database_path
+        )
+        first = persistent.get_quotes(["000021.SZ"])
+        self.assertEqual("available", first["000021.SZ"].status)
+
+        restarted = PersistentMarketDataProvider(
+            StubUnavailableQuoteProvider(), self.database_path
+        )
+        second = restarted.get_quotes(["000021.SZ"])
+
+        self.assertEqual("available", second["000021.SZ"].status)
+        self.assertEqual("stub_live", second["000021.SZ"].source)
+        self.assertIsNotNone(second["000021.SZ"].cached_at)
+
+    def test_falls_back_when_live_provider_raises(self) -> None:
+        PersistentMarketDataProvider(
+            StubLiveQuoteProvider(), self.database_path
+        ).get_quotes(["000021.SZ"])
+
+        persistent = PersistentMarketDataProvider(
+            FailingQuoteProvider(), self.database_path
+        )
+        quote = persistent.get_quotes(["000021.SZ"])["000021.SZ"]
+
+        self.assertEqual("available", quote.status)
+        self.assertIsNotNone(quote.cached_at)
+
+    def test_reports_persisted_cache_info(self) -> None:
+        persistent = PersistentMarketDataProvider(
+            StubLiveQuoteProvider(), self.database_path
+        )
+        persistent.get_quotes(["000021.SZ", "601899.SH"])
+
+        info = persistent.cache_info()
+
+        self.assertTrue(info["persisted"])
+        self.assertEqual(2, info["persisted_symbols"])
 
 
 if __name__ == "__main__":

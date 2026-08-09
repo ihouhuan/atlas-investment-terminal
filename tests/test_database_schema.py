@@ -33,6 +33,7 @@ class DatabaseSchemaTests(unittest.TestCase):
                 "decisions",
                 "import_runs",
                 "financial_metrics",
+                "market_quote_cache",
             }.issubset(table_names)
         )
 

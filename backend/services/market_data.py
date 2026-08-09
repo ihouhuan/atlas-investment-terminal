@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
+import sqlite3
 from time import monotonic
 from typing import Callable, Dict, Iterable, Optional, Protocol
 from urllib.request import Request, urlopen
@@ -25,6 +27,7 @@ class MarketQuote:
     source: str
     status: str
     error: Optional[str] = None
+    cached_at: Optional[str] = None
 
 
 class MarketDataProvider(Protocol):
@@ -56,6 +59,165 @@ class CachedMarketDataProvider:
     def cache_info(self) -> Dict[str, object]:
         age_seconds = max(0.0, monotonic() - self._cached_at) if self._cached_at else None
         return {"ttl_seconds": self._ttl_seconds, "age_seconds": age_seconds, "cached": age_seconds is not None and age_seconds < self._ttl_seconds}
+
+
+class PersistentMarketDataProvider:
+    """Fall back to the latest successful SQLite quote snapshot when live data fails."""
+
+    CACHE_TABLE = "market_quote_cache"
+
+    def __init__(
+        self,
+        provider: MarketDataProvider,
+        database_path: Path = Path("data/atlas.db"),
+    ) -> None:
+        self._provider = provider
+        self._database_path = Path(database_path)
+
+    def get_quotes(self, symbols: Iterable[str]) -> Dict[str, MarketQuote]:
+        requested_symbols = list(symbols)
+        if not requested_symbols:
+            return {}
+        try:
+            live_quotes = self._provider.get_quotes(requested_symbols)
+        except Exception as error:
+            live_quotes = {
+                symbol: self._unavailable_quote(symbol, str(error))
+                for symbol in requested_symbols
+            }
+        self._save_available_quotes(live_quotes)
+
+        results: Dict[str, MarketQuote] = {}
+        for symbol in requested_symbols:
+            quote = live_quotes.get(symbol)
+            if quote is not None and quote.status == "available":
+                results[symbol] = quote
+                continue
+            cached = self._load_quote(symbol)
+            if cached is not None:
+                results[symbol] = cached
+            else:
+                results[symbol] = quote or self._unavailable_quote(
+                    symbol, "No live or cached quote is available."
+                )
+        return results
+
+    def clear_cache(self) -> None:
+        """Invalidate only the in-memory cache; persisted snapshots remain for fallback."""
+        clear = getattr(self._provider, "clear_cache", None)
+        if callable(clear):
+            clear()
+
+    def cache_info(self) -> Dict[str, object]:
+        info: Dict[str, object] = {}
+        provider_cache_info = getattr(self._provider, "cache_info", None)
+        if callable(provider_cache_info):
+            info.update(provider_cache_info())
+        info["persisted"] = True
+        info["persisted_symbols"] = self._count_cached_symbols()
+        return info
+
+    def _save_available_quotes(self, quotes: Dict[str, MarketQuote]) -> None:
+        available = [quote for quote in quotes.values() if quote.status == "available"]
+        if not available:
+            return
+        connection = self._connect()
+        try:
+            with connection:
+                for quote in available:
+                    connection.execute(
+                        """
+                        INSERT INTO market_quote_cache (
+                            symbol, name, price, previous_close, change, change_pct,
+                            observed_at, fetched_at, source, status, error, cached_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', NULL, ?)
+                        ON CONFLICT(symbol) DO UPDATE SET
+                            name = excluded.name,
+                            price = excluded.price,
+                            previous_close = excluded.previous_close,
+                            change = excluded.change,
+                            change_pct = excluded.change_pct,
+                            observed_at = excluded.observed_at,
+                            fetched_at = excluded.fetched_at,
+                            source = excluded.source,
+                            status = excluded.status,
+                            error = excluded.error,
+                            cached_at = excluded.cached_at
+                        """,
+                        (
+                            quote.symbol,
+                            quote.name,
+                            quote.price,
+                            quote.previous_close,
+                            quote.change,
+                            quote.change_pct,
+                            quote.observed_at,
+                            quote.fetched_at,
+                            quote.source,
+                            datetime.now(timezone.utc).isoformat(),
+                        ),
+                    )
+        finally:
+            connection.close()
+
+    def _load_quote(self, symbol: str) -> Optional[MarketQuote]:
+        connection = self._connect()
+        try:
+            row = connection.execute(
+                """
+                SELECT symbol, name, price, previous_close, change, change_pct,
+                       observed_at, fetched_at, source, cached_at
+                FROM market_quote_cache
+                WHERE symbol = ?
+                """,
+                (symbol,),
+            ).fetchone()
+        finally:
+            connection.close()
+        if row is None:
+            return None
+        return MarketQuote(
+            symbol=row["symbol"],
+            name=row["name"],
+            price=row["price"],
+            previous_close=row["previous_close"],
+            change=row["change"],
+            change_pct=row["change_pct"],
+            observed_at=row["observed_at"],
+            fetched_at=row["fetched_at"],
+            source=row["source"],
+            status="available",
+            error=None,
+            cached_at=row["cached_at"],
+        )
+
+    def _count_cached_symbols(self) -> int:
+        connection = self._connect()
+        try:
+            return int(connection.execute("SELECT COUNT(*) FROM market_quote_cache").fetchone()[0])
+        finally:
+            connection.close()
+
+    def _connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(str(self._database_path))
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    @staticmethod
+    def _unavailable_quote(symbol: str, error: str) -> MarketQuote:
+        return MarketQuote(
+            symbol=symbol,
+            name=None,
+            price=None,
+            previous_close=None,
+            change=None,
+            change_pct=None,
+            observed_at=None,
+            fetched_at=datetime.now(timezone.utc).isoformat(),
+            source="none",
+            status="unavailable",
+            error=error,
+        )
 
 
 class TencentMarketDataProvider:

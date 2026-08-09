@@ -107,6 +107,21 @@ CREATE TABLE IF NOT EXISTS financial_metrics (
 CREATE INDEX IF NOT EXISTS idx_financial_metrics_stock_report
 ON financial_metrics (stock_id, report_date);
 
+CREATE TABLE IF NOT EXISTS market_quote_cache (
+    symbol TEXT PRIMARY KEY,
+    name TEXT,
+    price REAL,
+    previous_close REAL,
+    change REAL,
+    change_pct REAL,
+    observed_at TEXT,
+    fetched_at TEXT NOT NULL,
+    source TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    cached_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS thesis_versions (
     id INTEGER PRIMARY KEY,
     stock_id INTEGER NOT NULL REFERENCES stocks(id),

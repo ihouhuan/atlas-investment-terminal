@@ -53,4 +53,27 @@ jobs:
             sleep 2
           done
           curl -sf -o /dev/null http://127.0.0.1:8501
-          scripts/ui_smoke.sh
+          set +e
+          scripts/ui_smoke.sh > /tmp/ui_smoke.log 2>&1
+          UI_EXIT=$?
+          set -e
+          if [ $UI_EXIT -ne 0 ]; then
+            echo "=== ui_smoke.log ==="
+            tail -200 /tmp/ui_smoke.log || true
+            echo "=== streamlit.log ==="
+            tail -200 /tmp/streamlit.log || true
+            echo "=== atlas_api.log ==="
+            tail -200 /tmp/atlas_api.log || true
+            exit $UI_EXIT
+          fi
+      - name: Upload UI smoke diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-logs
+          path: |
+            /tmp/ui_smoke.log
+            /tmp/streamlit.log
+            /tmp/atlas_api.log
+          if-no-files-found: warn
+          retention-days: 7

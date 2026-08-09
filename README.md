@@ -119,6 +119,16 @@ launchctl unload ~/Library/LaunchAgents/com.atlas.daily.plist
 
 `backend/database/schema.py` 使用 `schema_migrations` 表记录已应用的迁移版本。数据库初始化时按 `MIGRATIONS` 列表顺序执行未应用的迁移，并在同一事务里写入版本号；迁移失败会整体回滚。后续表结构变更在 `MIGRATIONS` 中追加新版本即可，避免直接修改历史建表语句。
 
+## 页面冒烟测试
+
+使用 Playwright CLI 打开本机 Streamlit，逐页检查晨报、市场概览、选股中心、股票详情、投资逻辑、决策日志和组合与风险页面是否真实渲染：
+
+```bash
+scripts/ui_smoke.sh
+```
+
+脚本默认访问 `http://localhost:8501`，可通过 `STREAMLIT_URL` 覆盖。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

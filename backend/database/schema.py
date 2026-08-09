@@ -1,4 +1,6 @@
 import sqlite3
+from datetime import datetime, timezone
+from typing import Dict, List
 
 
 SCHEMA = """
@@ -213,32 +215,100 @@ CREATE TABLE IF NOT EXISTS alert_acknowledgements (
 """
 
 
+def _apply_initial_schema(connection: sqlite3.Connection) -> None:
+    _execute_statements(connection, SCHEMA)
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(morning_brief_snapshots)").fetchall()
+    }
+    if "research_conclusion" not in columns:
+        connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN research_conclusion TEXT")
+    if "review_status" not in columns:
+        connection.execute(
+            "ALTER TABLE morning_brief_snapshots ADD COLUMN review_status TEXT NOT NULL DEFAULT 'unreviewed'"
+        )
+    if "reviewed_at" not in columns:
+        connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN reviewed_at TEXT")
+    if "review_notes" not in columns:
+        connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN review_notes TEXT")
+    action_columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(morning_brief_follow_up_actions)").fetchall()
+    }
+    if "due_date" not in action_columns:
+        connection.execute("ALTER TABLE morning_brief_follow_up_actions ADD COLUMN due_date TEXT")
+    if "priority" not in action_columns:
+        connection.execute(
+            "ALTER TABLE morning_brief_follow_up_actions ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'"
+        )
+
+
+MIGRATIONS: List[Dict[str, object]] = [
+    {
+        "version": "001_initial_schema",
+        "description": "Create the Atlas 2.0 tables and compatibility columns.",
+        "apply": _apply_initial_schema,
+    }
+]
+
+
 def initialize_database(connection: sqlite3.Connection) -> None:
-    """Create the Atlas schema atomically and leave foreign keys enabled."""
-    with connection:
-        connection.executescript(SCHEMA)
-        columns = {
-            row["name"]
-            for row in connection.execute("PRAGMA table_info(morning_brief_snapshots)").fetchall()
-        }
-        if "research_conclusion" not in columns:
-            connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN research_conclusion TEXT")
-        if "review_status" not in columns:
-            connection.execute(
-                "ALTER TABLE morning_brief_snapshots ADD COLUMN review_status TEXT NOT NULL DEFAULT 'unreviewed'"
+    """Apply pending schema migrations atomically and leave foreign keys enabled."""
+    _apply_pending_migrations(connection, MIGRATIONS)
+    connection.execute("PRAGMA foreign_keys = ON")
+
+
+def get_applied_migrations(connection: sqlite3.Connection) -> List[Dict[str, object]]:
+    """Return applied migration versions in application order."""
+    rows = connection.execute(
+        "SELECT version, description, applied_at FROM schema_migrations ORDER BY version"
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _apply_pending_migrations(
+    connection: sqlite3.Connection,
+    migrations: List[Dict[str, object]],
+) -> None:
+    connection.execute("BEGIN")
+    try:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version TEXT PRIMARY KEY,
+                description TEXT NOT NULL,
+                applied_at TEXT NOT NULL
             )
-        if "reviewed_at" not in columns:
-            connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN reviewed_at TEXT")
-        if "review_notes" not in columns:
-            connection.execute("ALTER TABLE morning_brief_snapshots ADD COLUMN review_notes TEXT")
-        action_columns = {
-            row["name"]
-            for row in connection.execute("PRAGMA table_info(morning_brief_follow_up_actions)").fetchall()
+            """
+        )
+        applied = {
+            row["version"]
+            for row in connection.execute("SELECT version FROM schema_migrations").fetchall()
         }
-        if "due_date" not in action_columns:
-            connection.execute("ALTER TABLE morning_brief_follow_up_actions ADD COLUMN due_date TEXT")
-        if "priority" not in action_columns:
+        for migration in migrations:
+            version = migration["version"]
+            if version in applied:
+                continue
+            migration["apply"](connection)
             connection.execute(
-                "ALTER TABLE morning_brief_follow_up_actions ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'"
+                """
+                INSERT INTO schema_migrations (version, description, applied_at)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    version,
+                    migration["description"],
+                    datetime.now(timezone.utc).isoformat(),
+                ),
             )
-        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("COMMIT")
+    except Exception:
+        connection.execute("ROLLBACK")
+        raise
+
+
+def _execute_statements(connection: sqlite3.Connection, sql_text: str) -> None:
+    for statement in sql_text.split(";"):
+        statement = statement.strip()
+        if statement:
+            connection.execute(statement)

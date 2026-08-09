@@ -115,6 +115,10 @@ scripts/install_daily_launchagent.sh
 launchctl unload ~/Library/LaunchAgents/com.atlas.daily.plist
 ```
 
+## 数据库迁移
+
+`backend/database/schema.py` 使用 `schema_migrations` 表记录已应用的迁移版本。数据库初始化时按 `MIGRATIONS` 列表顺序执行未应用的迁移，并在同一事务里写入版本号；迁移失败会整体回滚。后续表结构变更在 `MIGRATIONS` 中追加新版本即可，避免直接修改历史建表语句。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

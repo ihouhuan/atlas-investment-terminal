@@ -1,7 +1,7 @@
 import re
 import sqlite3
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -163,6 +163,46 @@ def refresh_stock_financials(
     }
 
 
+def refresh_stock_financials_batch(
+    connection: sqlite3.Connection,
+    provider: FinancialDataProvider,
+    symbols: Optional[Iterable[str]] = None,
+    fetched_at: Optional[str] = None,
+) -> Dict[str, object]:
+    """Refresh a batch of stocks and continue past per-symbol failures."""
+    if symbols is None:
+        requested_symbols = [
+            row["symbol"]
+            for row in connection.execute(
+                "SELECT symbol FROM stocks ORDER BY symbol"
+            ).fetchall()
+        ]
+    else:
+        requested_symbols = list(dict.fromkeys(symbol.upper() for symbol in symbols))
+    timestamp = fetched_at or datetime.now(timezone.utc).isoformat()
+    results = []
+    failures = []
+    for symbol in requested_symbols:
+        try:
+            result = refresh_stock_financials(
+                connection, provider, symbol, fetched_at=timestamp
+            )
+        except (LookupError, FinancialDataError) as error:
+            failures.append({"symbol": symbol, "error": str(error)})
+            continue
+        results.append(result)
+    return {
+        "status": "completed",
+        "fetched_at": timestamp,
+        "total": len(requested_symbols),
+        "refreshed": len(results),
+        "failed": len(failures),
+        "failures": failures,
+        "report_periods": sum(result["report_periods"] for result in results),
+        "metrics": sum(result["metrics"] for result in results),
+    }
+
+
 def load_latest_financial_metrics(
     connection: sqlite3.Connection, stock_id: int
 ) -> Dict[str, object]:
@@ -202,6 +242,9 @@ def load_latest_financial_metrics(
     return {
         "status": "available" if latest else "unavailable",
         "source": next((item["source"] for item in latest.values()), None),
+        "fetched_at": max(
+            (item["fetched_at"] for item in latest.values()), default=None
+        ),
         "latest_report_date": max(
             (item["report_date"] for item in latest.values()), default=None
         ),

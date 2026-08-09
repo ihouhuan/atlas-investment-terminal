@@ -26,36 +26,47 @@ def install_canonical_risk_budget(
     connection: sqlite3.Connection,
     source_path: str,
     source_as_of: str,
+    manage_transaction: bool = True,
 ) -> int:
     """Install the sole active risk-budget version without duplicating it."""
-    with connection:
-        existing = connection.execute(
-            "SELECT id FROM risk_budget_versions WHERE version = ?",
-            (CANONICAL_RISK_BUDGET_VERSION,),
-        ).fetchone()
-        connection.execute("UPDATE risk_budget_versions SET is_active = 0")
+    if manage_transaction:
+        with connection:
+            return _install_canonical_risk_budget(connection, source_path, source_as_of)
+    return _install_canonical_risk_budget(connection, source_path, source_as_of)
 
-        if existing is not None:
-            connection.execute(
-                "UPDATE risk_budget_versions SET is_active = 1 WHERE id = ?",
-                (existing["id"],),
-            )
-            return int(existing["id"])
 
-        cursor = connection.execute(
-            """
-            INSERT INTO risk_budget_versions (
-                version, rules_json, source_path, source_as_of, is_active, created_at
-            ) VALUES (?, ?, ?, ?, 1, ?)
-            """,
-            (
-                CANONICAL_RISK_BUDGET_VERSION,
-                json.dumps(CANONICAL_RISK_BUDGET, ensure_ascii=False, sort_keys=True),
-                source_path,
-                source_as_of,
-                datetime.now(timezone.utc).isoformat(),
-            ),
+def _install_canonical_risk_budget(
+    connection: sqlite3.Connection,
+    source_path: str,
+    source_as_of: str,
+) -> int:
+    existing = connection.execute(
+        "SELECT id FROM risk_budget_versions WHERE version = ?",
+        (CANONICAL_RISK_BUDGET_VERSION,),
+    ).fetchone()
+    connection.execute("UPDATE risk_budget_versions SET is_active = 0")
+
+    if existing is not None:
+        connection.execute(
+            "UPDATE risk_budget_versions SET is_active = 1 WHERE id = ?",
+            (existing["id"],),
         )
+        return int(existing["id"])
+
+    cursor = connection.execute(
+        """
+        INSERT INTO risk_budget_versions (
+            version, rules_json, source_path, source_as_of, is_active, created_at
+        ) VALUES (?, ?, ?, ?, 1, ?)
+        """,
+        (
+            CANONICAL_RISK_BUDGET_VERSION,
+            json.dumps(CANONICAL_RISK_BUDGET, ensure_ascii=False, sort_keys=True),
+            source_path,
+            source_as_of,
+            datetime.now(timezone.utc).isoformat(),
+        ),
+    )
     return int(cursor.lastrowid)
 
 

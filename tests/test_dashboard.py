@@ -1,10 +1,12 @@
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.dashboard.main import market_index_rows
 from app.pages.decision_journal import decision_rows
 from app.pages.screener import screener_rows
 from app.pages.stock_detail import (
+    cache_age_text,
     financial_history_rows,
     financial_metric_rows,
     valuation_rows,
@@ -376,6 +378,14 @@ class DashboardPresentationTests(unittest.TestCase):
         self.assertEqual("53.64", rows[0]["数值"])
         self.assertEqual("tencent", rows[0]["来源"])
         self.assertEqual("643.13", rows[2]["数值"])
+
+    def test_formats_financial_cache_age_text(self) -> None:
+        now = datetime(2026, 8, 9, 12, 0, tzinfo=timezone.utc)
+
+        self.assertEqual("今日刷新", cache_age_text("2026-08-09T10:00:00+00:00", now))
+        self.assertEqual("1 天前刷新", cache_age_text("2026-08-08T10:00:00+00:00", now))
+        self.assertEqual("3 天前刷新", cache_age_text("2026-08-06T10:00:00+00:00", now))
+        self.assertEqual("未提供", cache_age_text(None, now))
 
 
 if __name__ == "__main__":

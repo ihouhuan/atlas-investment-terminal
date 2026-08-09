@@ -19,8 +19,20 @@ def import_legacy_atlas(
     connection: sqlite3.Connection,
     legacy_root: Path,
     imported_at: Optional[datetime] = None,
+    manage_transaction: bool = True,
 ) -> Dict[str, int]:
     """Import a single legacy Atlas snapshot while preserving source provenance."""
+    if manage_transaction:
+        with connection:
+            return _import_legacy_atlas_inner(connection, legacy_root, imported_at)
+    return _import_legacy_atlas_inner(connection, legacy_root, imported_at)
+
+
+def _import_legacy_atlas_inner(
+    connection: sqlite3.Connection,
+    legacy_root: Path,
+    imported_at: Optional[datetime] = None,
+) -> Dict[str, int]:
     legacy_root = legacy_root.resolve()
     portfolio_path = legacy_root / "portfolio" / "portfolio.json"
     profile_path = legacy_root / "投资者档案" / "投资者档案.md"
@@ -45,23 +57,22 @@ def import_legacy_atlas(
     profile_text = profile_path.read_text(encoding="utf-8")
     decisions_text = decisions_path.read_text(encoding="utf-8")
 
-    with connection:
-        connection.execute(
-            """
-            INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details)
-            VALUES (?, ?, ?, 'completed', '')
-            """,
-            (import_key, source_as_of, imported_timestamp),
-        )
-        _import_investor_profile(
-            connection, profile_text, str(profile_path), source_as_of, imported_timestamp
-        )
-        position_count = _import_portfolio(
-            connection, portfolio, str(portfolio_path), source_as_of, imported_timestamp
-        )
-        decision_count = _import_decisions(
-            connection, decisions_text, str(decisions_path), source_as_of, imported_timestamp
-        )
+    connection.execute(
+        """
+        INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details)
+        VALUES (?, ?, ?, 'completed', '')
+        """,
+        (import_key, source_as_of, imported_timestamp),
+    )
+    _import_investor_profile(
+        connection, profile_text, str(profile_path), source_as_of, imported_timestamp
+    )
+    position_count = _import_portfolio(
+        connection, portfolio, str(portfolio_path), source_as_of, imported_timestamp
+    )
+    decision_count = _import_decisions(
+        connection, decisions_text, str(decisions_path), source_as_of, imported_timestamp
+    )
 
     return {
         "positions": position_count,
@@ -74,8 +85,20 @@ def import_legacy_watchlist(
     connection: sqlite3.Connection,
     watchlist_path: Path,
     imported_at: Optional[datetime] = None,
+    manage_transaction: bool = True,
 ) -> int:
     """Import the old self-selected stock pool without treating its prices as current."""
+    if manage_transaction:
+        with connection:
+            return _import_legacy_watchlist_inner(connection, watchlist_path, imported_at)
+    return _import_legacy_watchlist_inner(connection, watchlist_path, imported_at)
+
+
+def _import_legacy_watchlist_inner(
+    connection: sqlite3.Connection,
+    watchlist_path: Path,
+    imported_at: Optional[datetime] = None,
+) -> int:
     watchlist_path = watchlist_path.resolve()
     if not watchlist_path.is_file():
         raise FileNotFoundError("Missing legacy watchlist input: " + str(watchlist_path))
@@ -92,33 +115,48 @@ def import_legacy_watchlist(
     imported_timestamp = (imported_at or datetime.now(timezone.utc)).isoformat()
     source_path = str(watchlist_path)
 
-    with connection:
+    connection.execute(
+        """
+        INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details)
+        VALUES (?, NULL, ?, 'completed', '')
+        """,
+        (import_key, imported_timestamp),
+    )
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("Legacy watchlist contains a non-object record.")
+        stock_id = _upsert_stock(connection, record)
         connection.execute(
             """
-            INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details)
-            VALUES (?, NULL, ?, 'completed', '')
+            INSERT INTO watchlist_items (
+                stock_id, category, source_path, source_as_of, imported_at
+            ) VALUES (?, 'legacy_watchlist', ?, NULL, ?)
             """,
-            (import_key, imported_timestamp),
+            (stock_id, source_path, imported_timestamp),
         )
-        for record in records:
-            if not isinstance(record, dict):
-                raise ValueError("Legacy watchlist contains a non-object record.")
-            stock_id = _upsert_stock(connection, record)
-            connection.execute(
-                """
-                INSERT INTO watchlist_items (
-                    stock_id, category, source_path, source_as_of, imported_at
-                ) VALUES (?, 'legacy_watchlist', ?, NULL, ?)
-                """,
-                (stock_id, source_path, imported_timestamp),
-            )
     return len(records)
 
 
 def import_legacy_financial_snapshots(
-    connection: sqlite3.Connection, source_path: Path, imported_at: Optional[datetime] = None
+    connection: sqlite3.Connection,
+    source_path: Path,
+    imported_at: Optional[datetime] = None,
+    manage_transaction: bool = True,
 ) -> int:
     """Preserve legacy financial records as dated snapshots rather than current facts."""
+    if manage_transaction:
+        with connection:
+            return _import_legacy_financial_snapshots_inner(
+                connection, source_path, imported_at
+            )
+    return _import_legacy_financial_snapshots_inner(connection, source_path, imported_at)
+
+
+def _import_legacy_financial_snapshots_inner(
+    connection: sqlite3.Connection,
+    source_path: Path,
+    imported_at: Optional[datetime] = None,
+) -> int:
     source_path = source_path.resolve()
     if not source_path.is_file():
         raise FileNotFoundError("Missing legacy financial input: " + str(source_path))
@@ -127,24 +165,23 @@ def import_legacy_financial_snapshots(
         return 0
     records = [json.loads(line) for line in source_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     timestamp = (imported_at or datetime.now(timezone.utc)).isoformat()
-    with connection:
+    connection.execute(
+        "INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details) VALUES (?, NULL, ?, 'completed', '')",
+        (import_key, timestamp),
+    )
+    for record in records:
+        code = _as_optional_text(record.get("code"))
+        name = _as_optional_text(record.get("name"))
+        if not code or not name:
+            raise ValueError("Legacy financial record is missing code or name.")
+        stock_id = _upsert_stock(connection, {"symbol": code, "name": name, "sector": record.get("sector")})
         connection.execute(
-            "INSERT INTO import_runs (source_path, source_as_of, imported_at, status, details) VALUES (?, NULL, ?, 'completed', '')",
-            (import_key, timestamp),
+            """
+            INSERT INTO financial_snapshots (stock_id, source, observed_at, data_json, source_path, imported_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (stock_id, _as_optional_text(record.get("source")) or "legacy", _as_optional_text(record.get("timestamp")), json.dumps(record, ensure_ascii=False), str(source_path), timestamp),
         )
-        for record in records:
-            code = _as_optional_text(record.get("code"))
-            name = _as_optional_text(record.get("name"))
-            if not code or not name:
-                raise ValueError("Legacy financial record is missing code or name.")
-            stock_id = _upsert_stock(connection, {"symbol": code, "name": name, "sector": record.get("sector")})
-            connection.execute(
-                """
-                INSERT INTO financial_snapshots (stock_id, source, observed_at, data_json, source_path, imported_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (stock_id, _as_optional_text(record.get("source")) or "legacy", _as_optional_text(record.get("timestamp")), json.dumps(record, ensure_ascii=False), str(source_path), timestamp),
-            )
     return len(records)
 
 
@@ -340,9 +377,8 @@ def _repair_legacy_decision_007(
     heading = next((item for item in DECISION_HEADING.finditer(decisions_text) if item.group("number") == "007"), None)
     if heading is None:
         raise ValueError("Legacy decision #007 is missing from the source journal.")
-    with connection:
-        connection.execute("DELETE FROM decisions WHERE legacy_key = '007'")
-        _import_two_symbol_plan_records(connection, decisions_text[heading.end() :], source_path, source_as_of, imported_at, "007")
+    connection.execute("DELETE FROM decisions WHERE legacy_key = '007'")
+    _import_two_symbol_plan_records(connection, decisions_text[heading.end() :], source_path, source_as_of, imported_at, "007")
 
 
 def _import_two_symbol_plan_records(

@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from backend.database.connection import connect
 from backend.services.initialize_atlas import initialize_atlas_database
@@ -35,6 +36,34 @@ class InitializeAtlasTests(unittest.TestCase):
             self.assertEqual(3, position_count)
             self.assertEqual("贵金属/有色金属（铜金）", stock["sector"])
             self.assertEqual("小金属", stock["industry"])
+
+    def test_initialization_rolls_back_everything_when_import_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "atlas.db"
+
+            with patch(
+                "backend.services.initialize_atlas.import_legacy_atlas",
+                side_effect=ValueError("simulated import failure"),
+            ):
+                with self.assertRaises(ValueError):
+                    initialize_atlas_database(database_path, LEGACY_ROOT)
+
+            connection = connect(database_path)
+            self.addCleanup(connection.close)
+            self.assertEqual(
+                0,
+                connection.execute(
+                    "SELECT COUNT(*) FROM risk_budget_versions"
+                ).fetchone()[0],
+            )
+            self.assertEqual(
+                0,
+                connection.execute("SELECT COUNT(*) FROM import_runs").fetchone()[0],
+            )
+            self.assertEqual(
+                0,
+                connection.execute("SELECT COUNT(*) FROM stocks").fetchone()[0],
+            )
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from backend.services.financial_refresh import (
     FinancialDataError,
     FinancialDataProvider,
     refresh_stock_financials,
+    refresh_stock_financials_batch,
 )
 from backend.services.market_data import (
     AkshareMarketDataProvider,
@@ -291,6 +292,27 @@ def create_app(
             raise HTTPException(status_code=404, detail=str(error))
         except FinancialDataError as error:
             raise HTTPException(status_code=502, detail=str(error))
+        finally:
+            connection.close()
+
+    @application.post("/api/v1/stocks/financials/refresh")
+    def refresh_stock_financials_batch_endpoint(
+        symbols: Optional[str] = Query(default=None),
+    ) -> dict:
+        connection = connect(database_path)
+        try:
+            requested_symbols = (
+                [
+                    symbol.strip().upper()
+                    for symbol in symbols.split(",")
+                    if symbol.strip()
+                ]
+                if symbols
+                else None
+            )
+            return refresh_stock_financials_batch(
+                connection, financial_data_provider, requested_symbols
+            )
         finally:
             connection.close()
 

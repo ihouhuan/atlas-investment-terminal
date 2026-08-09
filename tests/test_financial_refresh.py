@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +14,9 @@ from backend.services.financial_refresh import (
     FinancialDataError,
     normalize_financial_frame,
     refresh_stock_financials,
+    refresh_stock_financials_batch,
 )
+from backend.services.refresh_financials import main as refresh_financials_cli_main
 
 
 def sample_financial_frame() -> pd.DataFrame:
@@ -43,6 +48,16 @@ class StubFinancialProvider:
         if self.error is not None:
             raise self.error
         return self.frame
+
+
+class SelectiveFinancialProvider:
+    def __init__(self, fail_symbols=()) -> None:
+        self.fail_symbols = set(fail_symbols)
+
+    def get_financial_abstract(self, symbol: str) -> pd.DataFrame:
+        if symbol in self.fail_symbols:
+            raise FinancialDataError("upstream unavailable")
+        return sample_financial_frame()
 
 
 class FinancialRefreshTests(unittest.TestCase):
@@ -154,6 +169,74 @@ class FinancialRefreshTests(unittest.TestCase):
 
             self.assertEqual(first_count, second_count)
             self.assertEqual(18.50, gross_margin)
+
+    def test_batch_refresh_refreshes_all_database_stocks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            connection = connect(Path(temporary_directory) / "atlas.db")
+            self.addCleanup(connection.close)
+            initialize_database(connection)
+            with connection:
+                connection.execute(
+                    "INSERT INTO stocks (symbol, name, exchange) VALUES ('000001.SZ', '平安银行', 'SZ')"
+                )
+                connection.execute(
+                    "INSERT INTO stocks (symbol, name, exchange) VALUES ('000002.SZ', '万科A', 'SZ')"
+                )
+
+            result = refresh_stock_financials_batch(connection, StubFinancialProvider())
+            metric_count = connection.execute(
+                "SELECT COUNT(*) FROM financial_metrics"
+            ).fetchone()[0]
+
+            self.assertEqual(2, result["total"])
+            self.assertEqual(2, result["refreshed"])
+            self.assertEqual(0, result["failed"])
+            self.assertGreater(metric_count, 0)
+
+    def test_batch_refresh_continues_after_symbol_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            connection = connect(Path(temporary_directory) / "atlas.db")
+            self.addCleanup(connection.close)
+            initialize_database(connection)
+            with connection:
+                connection.execute(
+                    "INSERT INTO stocks (symbol, name, exchange) VALUES ('000001.SZ', '平安银行', 'SZ')"
+                )
+                connection.execute(
+                    "INSERT INTO stocks (symbol, name, exchange) VALUES ('000002.SZ', '万科A', 'SZ')"
+                )
+
+            result = refresh_stock_financials_batch(
+                connection,
+                SelectiveFinancialProvider(fail_symbols={"000002.SZ"}),
+            )
+
+            self.assertEqual(2, result["total"])
+            self.assertEqual(1, result["refreshed"])
+            self.assertEqual(1, result["failed"])
+            self.assertEqual("000002.SZ", result["failures"][0]["symbol"])
+
+    def test_cli_refreshes_requested_symbols_and_prints_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "atlas.db"
+            connection = connect(database_path)
+            self.addCleanup(connection.close)
+            initialize_database(connection)
+            with connection:
+                connection.execute(
+                    "INSERT INTO stocks (symbol, name, exchange) VALUES ('000021.SZ', '深科技', 'SZ')"
+                )
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                exit_code = refresh_financials_cli_main(
+                    ["--database", str(database_path), "--symbols", "000021.SZ"],
+                    provider=StubFinancialProvider(),
+                )
+            summary = json.loads(output.getvalue())
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual(1, summary["refreshed"])
+        self.assertEqual(0, summary["failed"])
 
     def test_unknown_symbol_raises_lookup_error(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

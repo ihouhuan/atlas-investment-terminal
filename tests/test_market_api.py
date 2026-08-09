@@ -285,6 +285,18 @@ class MarketApiTests(unittest.TestCase):
 
         self.assertEqual(404, response.status_code)
 
+    def test_bulk_financial_refresh_refreshes_selected_symbols(self) -> None:
+        response = self.client.post(
+            "/api/v1/stocks/financials/refresh?symbols=000021.SZ,601899.SH"
+        )
+
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertEqual("completed", body["status"])
+        self.assertEqual(2, body["total"])
+        self.assertEqual(2, body["refreshed"])
+        self.assertEqual(0, body["failed"])
+
     def test_financial_refresh_returns_502_when_upstream_fails(self) -> None:
         client = TestClient(
             create_app(

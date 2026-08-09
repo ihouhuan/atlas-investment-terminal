@@ -17,18 +17,26 @@ def initialize_atlas_database(database_path: Path, legacy_root: Path) -> Dict[st
         portfolio_path = legacy_root / "portfolio" / "portfolio.json"
         portfolio = json.loads(portfolio_path.read_text(encoding="utf-8"))
         source_as_of = str(portfolio.get("last_updated") or "") or None
-        install_canonical_risk_budget(
-            connection,
-            str(legacy_root / "portfolio" / "仓位预算.md"),
-            source_as_of or "unknown",
-        )
-        results = import_legacy_atlas(connection, legacy_root)
-        results["watchlist_items"] = import_legacy_watchlist(
-            connection, legacy_root / "china_market" / "data" / "user_watchlist.json"
-        )
-        results["financial_snapshots"] = import_legacy_financial_snapshots(
-            connection, legacy_root / "china_market" / "data" / "stock_fundamentals.jsonl"
-        )
+        with connection:
+            install_canonical_risk_budget(
+                connection,
+                str(legacy_root / "portfolio" / "仓位预算.md"),
+                source_as_of or "unknown",
+                manage_transaction=False,
+            )
+            results = import_legacy_atlas(
+                connection, legacy_root, manage_transaction=False
+            )
+            results["watchlist_items"] = import_legacy_watchlist(
+                connection,
+                legacy_root / "china_market" / "data" / "user_watchlist.json",
+                manage_transaction=False,
+            )
+            results["financial_snapshots"] = import_legacy_financial_snapshots(
+                connection,
+                legacy_root / "china_market" / "data" / "stock_fundamentals.jsonl",
+                manage_transaction=False,
+            )
         results["risk_budget_versions"] = 1
         return results
     finally:

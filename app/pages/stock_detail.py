@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Dict
 
 METRIC_DISPLAY_ORDER = [
@@ -66,6 +67,29 @@ def financial_history_rows(financials: Dict[str, object]) -> list:
     return rows
 
 
+def cache_age_text(fetched_at, now=None) -> str:
+    """Render a short human-readable cache age without fabricating freshness."""
+    if not fetched_at:
+        return "未提供"
+    try:
+        parsed = datetime.fromisoformat(str(fetched_at).replace("Z", "+00:00"))
+        current = now or datetime.now(timezone.utc)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=timezone.utc)
+        days = (current - parsed).days
+    except (TypeError, ValueError):
+        return str(fetched_at)
+    if days < 0:
+        return "刚刚刷新"
+    if days == 0:
+        return "今日刷新"
+    if days == 1:
+        return "1 天前刷新"
+    return "{} 天前刷新".format(days)
+
+
 def valuation_rows(valuation: Dict[str, object]) -> list:
     """Format preserved legacy valuation snapshots without treating them as live."""
     labels = {
@@ -130,17 +154,11 @@ def render_stock_detail(
         st.info(financials.get("reason") or "本地尚无财务缓存。")
     else:
         st.caption(
-            "最新报告期：{} · 来源：{} · 刷新时间：{}".format(
+            "最新报告期：{} · 来源：{} · 刷新时间：{}（{}）".format(
                 financials.get("latest_report_date") or "未提供",
                 financials.get("source") or "未提供",
-                next(
-                    (
-                        metric.get("fetched_at")
-                        for metric in financials.get("metrics", {}).values()
-                        if metric.get("fetched_at")
-                    ),
-                    "未提供",
-                ),
+                financials.get("fetched_at") or "未提供",
+                cache_age_text(financials.get("fetched_at")),
             )
         )
         st.dataframe(
@@ -159,7 +177,20 @@ def render_stock_detail(
         st.dataframe(
             valuation_rows(valuation), width="stretch", hide_index=True
         )
-        st.caption("估值指标来自已留存快照，不视为实时数据。")
+        latest_observed_at = max(
+            (
+                metric.get("observed_at")
+                for metric in valuation.get("metrics", {}).values()
+                if metric.get("observed_at")
+            ),
+            default=None,
+        )
+        st.caption(
+            "估值指标来自已留存快照，不视为实时数据；快照时间：{}（{}）。".format(
+                latest_observed_at or "未提供",
+                cache_age_text(latest_observed_at),
+            )
+        )
     else:
         st.info(valuation.get("reason") or "本地暂无可验证的 PE、PB 或市值估值快照。")
 

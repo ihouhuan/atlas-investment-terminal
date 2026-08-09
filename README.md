@@ -61,6 +61,22 @@ python3 -m backend.services.initialize_atlas
 
 `GET /api/v1/stocks/{symbol}` 返回 `financials` 只读缓存，包含最新报告期、指标来源、刷新时间和最近报告期历史；估值 PE/PB/市值从历史快照回退展示。选股器优先使用该规范化缓存，ROE 与营收同比已纳入筛选，legacy 仅作为缺失指标的历史回退。股票详情页只展示缓存，不提供手动编辑；页面上的“刷新财务数据”按钮会调用上述 API。
 
+批量刷新全部、自选或持仓股票：
+
+```bash
+.venv/bin/python -m backend.services.refresh_financials --scope all
+.venv/bin/python -m backend.services.refresh_financials --scope watchlist
+.venv/bin/python -m backend.services.refresh_financials --symbols 000021.SZ,601899.SH
+```
+
+也可以调用 `POST /api/v1/stocks/financials/refresh?symbols=000021.SZ,601899.SH`。详情页会显示财务缓存与估值快照距今的时间，避免把陈旧数据误读为实时数据。
+
+## 依赖与 CI
+
+- `requirements.txt` 锁定顶层运行依赖版本。
+- `requirements.lock.txt` 锁定完整虚拟环境版本，供 CI 复现。
+- `.github/workflows/ci.yml` 在推送和 Pull Request 时安装锁定依赖并运行全量测试。
+
 ## 迁移资料
 
 - 旧系统架构审计：`docs/reference/legacy-architecture-audit-2026-08-08.md`

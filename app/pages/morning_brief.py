@@ -193,14 +193,14 @@ def render_morning_brief(
     st.caption("完成率：{}%（已完成 {} / 总计 {}）".format(summary.get("completion_rate", 0.0), summary.get("completed", 0), summary.get("total", 0)))
     if open_actions.get("items"):
         st.warning("有 {} 项复盘行动待处理。".format(open_actions["total"]))
-        st.dataframe(open_action_rows(open_actions), use_container_width=True, hide_index=True)
+        st.dataframe(open_action_rows(open_actions), width="stretch", hide_index=True)
     else:
         st.success("暂无待完成复盘行动项。")
     st.subheader("今日优先事项")
     priority_rows = priority_action_rows(open_actions)
     if priority_rows:
         st.warning("优先处理逾期或高优先级复盘事项。")
-        st.dataframe(priority_rows, use_container_width=True, hide_index=True)
+        st.dataframe(priority_rows, width="stretch", hide_index=True)
     else:
         st.info("当前没有逾期或高优先级行动项。")
     st.subheader("行动项完成趋势")
@@ -223,7 +223,7 @@ def render_morning_brief(
     if action_trend["items"]:
         st.dataframe(
             [{"日期": item["action_date"], "完成行动项": item["completed"] or 0} for item in action_trend["items"]],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
     research_conclusion = st.text_area(
@@ -249,11 +249,11 @@ def render_morning_brief(
     st.subheader("今日研究待办")
     st.caption("组合快照：{} · 来源：{}".format(portfolio.get("as_of_date") or "未提供", portfolio["summary"].get("source_path") or "未提供"))
     st.info("缺少 Thesis：{}；未确认计划：{}；风险预算违规：{}。".format(integrity["missing_thesis_count"], integrity["unconfirmed_plan_count"], portfolio["risk"]["violation_count"]))
-    st.dataframe(integrity["items"], use_container_width=True, hide_index=True)
+    st.dataframe(integrity["items"], width="stretch", hide_index=True)
     st.subheader("风险变化摘要")
     if delta.get("status") == "available":
         st.caption("对比上一份已保存的本地晨报；计数减少仅表示待进一步核对。")
-        st.dataframe(brief_delta_rows(delta), use_container_width=True, hide_index=True)
+        st.dataframe(brief_delta_rows(delta), width="stretch", hide_index=True)
     else:
         st.info(delta.get("reason", "保存至少两份本地晨报后可比较风险变化。"))
     st.subheader("本地晨报历史")
@@ -262,7 +262,7 @@ def render_morning_brief(
         st.info("尚无本地晨报快照。保存晨报后可在此选择任意两份进行复盘。")
     else:
         st.caption("共 {} 份本地晨报；历史快照只读。".format(history.get("total", len(history_items))))
-        st.dataframe(brief_history_rows(history), use_container_width=True, hide_index=True)
+        st.dataframe(brief_history_rows(history), width="stretch", hide_index=True)
         review_options = [item["id"] for item in history_items]
         review_target_id = st.selectbox(
             "选择需复盘的晨报",
@@ -321,7 +321,7 @@ def render_morning_brief(
                         }
                         for item in actions
                     ],
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
                 for item in actions:
@@ -370,7 +370,7 @@ def render_morning_brief(
             else:
                 selected_delta = load_delta(current_id, previous_id)
                 st.caption("已按选定的两份晨报更新风险变化摘要。")
-                st.dataframe(brief_delta_rows(selected_delta), use_container_width=True, hide_index=True)
+                st.dataframe(brief_delta_rows(selected_delta), width="stretch", hide_index=True)
                 st.download_button(
                     "下载差异复盘 Markdown",
                     morning_brief_comparison_markdown(selected_delta),
@@ -386,4 +386,4 @@ def render_morning_brief(
     )
     st.subheader("筛选候选（历史快照）")
     st.caption("候选 {} 只；ROE、营收增长仍无完整覆盖。".format(screener["total"]))
-    st.dataframe([{"股票": item["name"], "代码": item["symbol"], "行业主题": item["sector"]} for item in screener["items"][:10]], use_container_width=True, hide_index=True)
+    st.dataframe([{"股票": item["name"], "代码": item["symbol"], "行业主题": item["sector"]} for item in screener["items"][:10]], width="stretch", hide_index=True)

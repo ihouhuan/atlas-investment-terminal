@@ -50,7 +50,7 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
     st.caption("完成率：{}%（已完成 {} / 总计 {}）".format(summary.get("completion_rate", 0.0), summary.get("completed", 0), summary.get("total", 0)))
     if open_actions.get("items"):
         st.warning("{} 项待办可能影响后续研究与风险跟踪。".format(open_actions["total"]))
-        st.dataframe(open_action_rows(open_actions), use_container_width=True, hide_index=True)
+        st.dataframe(open_action_rows(open_actions), width="stretch", hide_index=True)
     else:
         st.success("暂无待完成复盘行动项。")
     st.subheader("行动项完成趋势")
@@ -63,13 +63,13 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
         st.bar_chart({"完成": {item["action_date"]: item["completed"] or 0 for item in action_trend["items"]}})
 
     st.subheader("持仓")
-    st.dataframe(portfolio_position_rows(overview), use_container_width=True, hide_index=True)
+    st.dataframe(portfolio_position_rows(overview), width="stretch", hide_index=True)
 
     st.subheader("风险预算检查")
     violations = overview["risk"]["violations"]
     if violations:
         st.warning("发现 {} 项规则违规；该结果为风险预算检查，不构成交易指令。".format(len(violations)))
-        st.dataframe(violations, use_container_width=True, hide_index=True)
+        st.dataframe(violations, width="stretch", hide_index=True)
     else:
         st.success("未发现风险预算违规。")
 
@@ -81,7 +81,7 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
                 integrity["missing_thesis_count"], integrity["unconfirmed_plan_count"]
             )
         )
-        st.dataframe(integrity["items"], use_container_width=True, hide_index=True)
+        st.dataframe(integrity["items"], width="stretch", hide_index=True)
     else:
         st.success("当前持仓的 Thesis 和计划记录均已补全。")
 
@@ -94,7 +94,7 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
         }
         for item in overview["industry_concentration"]
     ]
-    st.dataframe(concentration_rows, use_container_width=True, hide_index=True)
+    st.dataframe(concentration_rows, width="stretch", hide_index=True)
 
     st.subheader("压力测试")
     st.caption("以下为旧 Atlas 场景库的假设结果，不预测未来市场表现。")
@@ -109,4 +109,4 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
         }
         for item in overview["stress_tests"]
     ]
-    st.dataframe(stress_rows, use_container_width=True, hide_index=True)
+    st.dataframe(stress_rows, width="stretch", hide_index=True)

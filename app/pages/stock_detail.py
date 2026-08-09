@@ -144,20 +144,20 @@ def render_stock_detail(
             )
         )
         st.dataframe(
-            financial_metric_rows(financials), use_container_width=True, hide_index=True
+            financial_metric_rows(financials), width="stretch", hide_index=True
         )
         history_rows = financial_history_rows(financials)
         if history_rows:
             with st.expander("最近报告期历史（只读）"):
                 st.dataframe(
-                    history_rows, use_container_width=True, hide_index=True
+                    history_rows, width="stretch", hide_index=True
                 )
         st.caption("仅展示已缓存数据，不提供手动编辑；刷新会替换同一报告期的缓存值。")
     st.subheader("估值（历史快照）")
     valuation = detail["valuation"]
     if valuation["status"] == "available":
         st.dataframe(
-            valuation_rows(valuation), use_container_width=True, hide_index=True
+            valuation_rows(valuation), width="stretch", hide_index=True
         )
         st.caption("估值指标来自已留存快照，不视为实时数据。")
     else:

@@ -30,7 +30,7 @@ def render_screener(st, result: Dict[str, object]) -> None:
     st.subheader("选股中心")
     st.caption("已刷新股票优先使用 AkShare 规范化缓存，其余使用已留存历史快照；缺失字段不估算。")
     st.caption("候选股票 {} 只。每项指标来源均显示在结果表中。".format(result.get("total", 0)))
-    st.dataframe(screener_rows(result), use_container_width=True, hide_index=True)
+    st.dataframe(screener_rows(result), width="stretch", hide_index=True)
 
 
 def _format_number(value: object) -> str:

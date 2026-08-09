@@ -31,7 +31,7 @@ def render_thesis_overview(st, overview: Dict[str, object], submit_version, fetc
         st.warning("{} / {} 个持仓缺少可验证的投资逻辑、验证指标或失效条件。状态不代表交易建议。".format(missing, total))
     else:
         st.info("所有持仓均已记录投资逻辑；验证指标与失效条件仍须人工核验。")
-    st.dataframe(thesis_rows(overview), use_container_width=True, hide_index=True)
+    st.dataframe(thesis_rows(overview), width="stretch", hide_index=True)
     render_thesis_history(st, overview, fetch_versions)
     render_thesis_entry_form(st, overview, submit_version)
 

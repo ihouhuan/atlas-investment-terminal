@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from app.dashboard.main import market_index_rows
 from app.pages.decision_journal import decision_rows
@@ -21,6 +22,16 @@ from app.pages.portfolio_risk import portfolio_position_rows
 
 
 class DashboardPresentationTests(unittest.TestCase):
+    def test_dashboard_source_avoids_deprecated_streamlit_width_argument(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        offenders = [
+            str(path)
+            for path in (project_root / "app").rglob("*.py")
+            if "use_container_width" in path.read_text(encoding="utf-8")
+        ]
+
+        self.assertEqual([], offenders)
+
     def test_warns_when_completion_rate_stays_low_across_two_windows(self) -> None:
         alert = execution_alert(
             {"summary": {"created": 3, "completion_rate": 33.3}},

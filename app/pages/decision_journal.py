@@ -29,7 +29,7 @@ def render_decision_journal(st, journal: Dict[str, object], submit_update, fetch
         st.warning("{} 条记录的原始格式无法完整自动迁移；请结合来源文件人工复核。".format(incomplete))
     if planned:
         st.info("{} 条为历史计划记录，未确认成交或执行。".format(planned))
-    st.dataframe(decision_rows(journal), use_container_width=True, hide_index=True)
+    st.dataframe(decision_rows(journal), width="stretch", hide_index=True)
     for item in journal.get("items", []):
         label = "#{} · {} · {}".format(
             item.get("legacy_key", "未提供"), item.get("symbol") or "未提供", item.get("action") or "未提供"

@@ -247,7 +247,7 @@ def run_dashboard() -> None:
             }
         )
     st.caption("股票池共 {} 只；当前展示前 {} 只。".format(watchlist["total"], len(table_rows)))
-    st.dataframe(table_rows, use_container_width=True, hide_index=True)
+    st.dataframe(table_rows, width="stretch", hide_index=True)
 
 
 if __name__ == "__main__":

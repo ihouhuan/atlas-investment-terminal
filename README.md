@@ -93,6 +93,7 @@ python3 -m backend.services.initialize_atlas
 
 - `requirements.txt` 锁定顶层运行依赖版本。
 - `requirements.lock.txt` 锁定完整虚拟环境版本，供 CI 复现。
+- 本地 `.venv` 使用 Python 3.12，锁定依赖已在 Python 3.12 下完整安装并通过全量测试。
 - `.github/workflows/ci.yml` 在推送和 Pull Request 时安装锁定依赖并运行全量测试。
 
 ## 迁移资料

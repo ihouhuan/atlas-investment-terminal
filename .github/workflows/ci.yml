@@ -34,6 +34,8 @@ jobs:
         run: pip install -r requirements.lock.txt
       - name: Install Playwright browser
         run: npx --yes playwright install --with-deps chromium
+      - name: Initialize local database
+        run: .venv/bin/python -m backend.services.initialize_atlas --database data/atlas.db
       - name: Run UI smoke
         run: |
           .venv/bin/uvicorn backend.api.app:app --host 127.0.0.1 --port 8000 > /tmp/atlas_api.log 2>&1 &

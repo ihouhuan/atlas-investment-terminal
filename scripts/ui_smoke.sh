@@ -12,7 +12,8 @@ check_page() {
   if "$PWCLI" snapshot --raw | grep -q "$pattern"; then
     echo "OK $name"
   else
-    echo "FAIL $name"
+    echo "FAIL $name (missing: $pattern)"
+    "$PWCLI" snapshot --raw | tail -40
     exit 1
   fi
 }

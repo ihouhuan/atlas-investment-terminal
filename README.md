@@ -101,6 +101,20 @@ python3 -m backend.services.initialize_atlas
 
 报告写入 `reports/daily/YYYY-MM-DD/`，终端输出 JSON manifest，包含市场可用状态、广度状态、财务刷新摘要、晨报快照 ID 和报告路径。`--financial-scope` 支持 `none`、`watchlist`、`portfolio`、`all`。
 
+## 定时任务
+
+macOS LaunchAgent 会在工作日 08:30 自动运行每日流水线并刷新自选股财务缓存：
+
+```bash
+scripts/install_daily_launchagent.sh
+```
+
+日志写入 `data/logs/daily_run.out.log` 和 `data/logs/daily_run.err.log`。如需停止：
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.atlas.daily.plist
+```
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

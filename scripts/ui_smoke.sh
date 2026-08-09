@@ -13,8 +13,10 @@ wait_for_page() {
   local waited=0
   while (( waited < timeout )); do
     if "$PWCLI" snapshot --raw | grep -q "$pattern"; then
-      echo "OK $name"
-      return 0
+      if ! "$PWCLI" snapshot --raw | grep -q "Running..."; then
+        echo "OK $name"
+        return 0
+      fi
     fi
     sleep 1
     waited=$((waited + 1))

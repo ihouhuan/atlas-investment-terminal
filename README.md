@@ -89,6 +89,16 @@ python3 -m backend.services.initialize_atlas
 
 `/api/v1/market/overview` 使用 AkShare 的 `stock_zh_a_spot_em` 全市场快照计算上涨/下跌/平盘家数、涨停/跌停家数和全市场成交额，Eastmoney 不可用时回退到新浪 `stock_zh_a_spot`。涨停/跌停按主板、创业板/科创板、北交所和 ST 的涨跌幅限制分别判断；所有上游不可用时返回 `status: "unavailable"` 并附原因，不估算缺失值。
 
+## 每日流水线
+
+统一入口一次完成：拉取并持久化行情、计算市场广度、刷新财务缓存（可选）、保存本地晨报快照、生成 Markdown 报告和机器可读运行清单。
+
+```bash
+.venv/bin/python -m backend.services.daily_run --financial-scope watchlist
+```
+
+报告写入 `reports/daily/YYYY-MM-DD/`，终端输出 JSON manifest，包含市场可用状态、广度状态、财务刷新摘要、晨报快照 ID 和报告路径。`--financial-scope` 支持 `none`、`watchlist`、`portfolio`、`all`。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

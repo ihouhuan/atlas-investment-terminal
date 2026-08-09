@@ -6,4 +6,4 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 1
 fi
 
-exec npx --yes --package @playwright/cli playwright-cli "$@"
+exec npx --yes --package @playwright/cli@0.1.18 playwright-cli "$@"

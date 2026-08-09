@@ -14,13 +14,13 @@ class UISmokeScriptTests(unittest.TestCase):
         self.assertTrue(script.stat().st_mode & stat.S_IXUSR)
         content = script.read_text(encoding="utf-8")
         for expected in (
-            "晨报",
+            "待完成行动项",
             "A 股市场状态",
-            "选股中心",
+            "候选股票",
             "财务指标（只读缓存）",
             "投资逻辑追踪",
-            "决策日志",
-            "组合与风险",
+            "已迁移",
+            "组合概览",
         ):
             self.assertIn(expected, content)
         self.assertIn("scripts/playwright_cli.sh", content)

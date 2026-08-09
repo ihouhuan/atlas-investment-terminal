@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from app.dashboard.ui import kpi_cards, section_title
+
 
 def screener_rows(result: Dict[str, object]) -> List[Dict[str, str]]:
     """Format preserved screener metrics without filling missing values."""
@@ -27,8 +29,22 @@ def screener_rows(result: Dict[str, object]) -> List[Dict[str, str]]:
 
 def render_screener(st, result: Dict[str, object]) -> None:
     """Render screening results with per-metric provenance and no estimation."""
-    st.subheader("选股中心")
-    st.caption("已刷新股票优先使用 AkShare 规范化缓存，其余使用已留存历史快照；缺失字段不估算。")
+    section_title(st, "选股中心", "已刷新股票优先使用 AkShare 规范化缓存，其余使用已留存历史快照；缺失字段不估算。")
+    items = result.get("items", [])
+    covered_pe = sum(
+        1 for item in items if item.get("metrics", {}).get("pe_ttm") is not None
+    )
+    covered_roe = sum(
+        1 for item in items if item.get("metrics", {}).get("roe") is not None
+    )
+    kpi_cards(
+        st,
+        [
+            {"label": "候选股票", "value": result.get("total", len(items)), "tone": "neutral"},
+            {"label": "有 PE TTM", "value": covered_pe, "tone": "good" if covered_pe else "warn"},
+            {"label": "有 ROE", "value": covered_roe, "tone": "good" if covered_roe else "warn"},
+        ],
+    )
     st.caption("候选股票 {} 只。每项指标来源均显示在结果表中。".format(result.get("total", 0)))
     st.dataframe(screener_rows(result), width="stretch", hide_index=True)
 

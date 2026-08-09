@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Dict, List
 
+from app.dashboard.ui import humanize_datetime, kpi_cards, section_title
 from backend.services.brief_report import brief_delta_rows, morning_brief_markdown
 
 
@@ -129,8 +130,7 @@ def render_morning_brief(
     update_action,
 ) -> None:
     """Render a read-only daily research checklist from existing verified endpoints."""
-    st.subheader("晨报")
-    st.caption("研究清单，不构成投资建议；所有指标沿用各自数据来源与口径。")
+    section_title(st, "晨报", "研究清单，不构成投资建议；所有指标沿用各自数据来源与口径。")
     cache = market.get("cache") or {}
     if st.button("手动刷新行情"):
         try:
@@ -140,13 +140,53 @@ def render_morning_brief(
         else:
             st.success("行情已刷新。")
             st.rerun()
-    st.caption("行情缓存：{}；最后成功数据时间：{}".format("已命中" if cache.get("cached") else "已刷新", next((item.get("fetched_at") for item in market.get("indices", []) if item.get("fetched_at")), "未提供")))
+    st.caption(
+        "行情缓存：{}；最后成功数据时间：{}".format(
+            "已命中" if cache.get("cached") else "已刷新",
+            humanize_datetime(
+                next(
+                    (item.get("fetched_at") for item in market.get("indices", []) if item.get("fetched_at")),
+                    None,
+                )
+            ),
+        )
+    )
     st.subheader("待完成行动项")
     due_window = st.selectbox("行动项截止日筛选", ["all", "today", "week"], format_func=lambda value: {"all": "全部待办", "today": "今日到期", "week": "本周到期"}[value])
     if due_window != "all":
         open_actions = load_open_actions(due_window)
     summary = open_actions.get("summary", {})
     st.caption("完成率：{}%（已完成 {} / 总计 {}）".format(summary.get("completion_rate", 0.0), summary.get("completed", 0), summary.get("total", 0)))
+    integrity = portfolio["research_integrity"]
+    kpi_cards(
+        st,
+        [
+            {
+                "label": "待完成行动",
+                "value": open_actions.get("total", 0),
+                "note": "完成率 {}%".format(summary.get("completion_rate", 0.0)),
+                "tone": "danger" if open_actions.get("total", 0) else "good",
+            },
+            {
+                "label": "风险违规",
+                "value": portfolio["risk"]["violation_count"],
+                "note": "按当前生效风险预算",
+                "tone": "danger" if portfolio["risk"]["violation_count"] else "good",
+            },
+            {
+                "label": "缺少 Thesis",
+                "value": integrity["missing_thesis_count"],
+                "note": "待补研究逻辑",
+                "tone": "warn" if integrity["missing_thesis_count"] else "good",
+            },
+            {
+                "label": "候选股票",
+                "value": screener.get("total", 0),
+                "note": "来自历史快照",
+                "tone": "neutral",
+            },
+        ],
+    )
     if open_actions.get("items"):
         st.warning("有 {} 项复盘行动待处理。".format(open_actions["total"]))
         st.dataframe(open_action_rows(open_actions), width="stretch", hide_index=True)
@@ -200,8 +240,7 @@ def render_morning_brief(
         price = item.get("price")
         change = item.get("change_pct")
         column.metric(item.get("name"), "数据不可用" if price is None else "{:.2f}".format(float(price)), "数据不可用" if change is None else "{:+.2f}%".format(float(change)))
-        column.caption("{} · {}".format(item.get("source") or "未提供", item.get("observed_at") or "未提供"))
-    integrity = portfolio["research_integrity"]
+        column.caption("{} · {}".format(item.get("source") or "未提供", humanize_datetime(item.get("observed_at"))))
     st.subheader("今日研究待办")
     st.caption("组合快照：{} · 来源：{}".format(portfolio.get("as_of_date") or "未提供", portfolio["summary"].get("source_path") or "未提供"))
     st.info("缺少 Thesis：{}；未确认计划：{}；风险预算违规：{}。".format(integrity["missing_thesis_count"], integrity["unconfirmed_plan_count"], portfolio["risk"]["violation_count"]))

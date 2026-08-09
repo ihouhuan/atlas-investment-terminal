@@ -1,6 +1,15 @@
 from datetime import datetime, timezone
 from typing import Dict
 
+from app.dashboard.ui import (
+    change_tone,
+    humanize_amount,
+    humanize_datetime,
+    kpi_cards,
+    section_title,
+    status_label,
+)
+
 METRIC_DISPLAY_ORDER = [
     "total_revenue",
     "total_revenue_growth",
@@ -123,22 +132,67 @@ def render_stock_detail(
     quote = detail["quote"]
     history = detail["financial_history"]
     fund_flow = detail["fund_flow"]
-    st.subheader("{} · {}".format(company["name"], company["symbol"]))
-    st.caption("{} · {} · {}".format(company["exchange"], company["sector"] or "未分类", company["industry"] or "未分类"))
-    columns = st.columns(3)
-    columns[0].metric("最新价", quote["price"] if quote["price"] is not None else "数据不可用")
-    columns[1].metric("涨跌幅", "{:+.2f}%".format(float(quote["change_pct"])) if quote["change_pct"] is not None else "数据不可用")
-    columns[2].metric("行情状态", quote["status"])
-    st.caption("行情来源：{} · 时间：{}".format(quote["source"], quote["observed_at"] or "未提供"))
+    section_title(
+        st,
+        "{} · {}".format(company["name"], company["symbol"]),
+        "{} · {} · {}".format(
+            company["exchange"],
+            company["sector"] or "未分类",
+            company["industry"] or "未分类",
+        ),
+    )
+    kpi_cards(
+        st,
+        [
+            {
+                "label": "最新价",
+                "value": "数据不可用" if quote["price"] is None else "{:.2f}".format(float(quote["price"])),
+                "note": quote["source"] or "未提供",
+                "tone": change_tone(quote.get("change_pct")),
+            },
+            {
+                "label": "涨跌幅",
+                "value": "{:+.2f}%".format(float(quote["change_pct"])) if quote["change_pct"] is not None else "数据不可用",
+                "note": humanize_datetime(quote.get("observed_at")),
+                "tone": change_tone(quote.get("change_pct")),
+            },
+            {
+                "label": "行情状态",
+                "value": status_label(quote.get("status")),
+                "note": "实时或历史缓存",
+                "tone": "good" if quote.get("status") == "available" else "warn",
+            },
+        ],
+    )
     st.subheader("资金流（历史快照）")
     if fund_flow["status"] == "unavailable":
         st.info("该股票暂无已导入资金流快照。")
     else:
-        columns = st.columns(3)
-        columns[0].metric("主力净流入", fund_flow["main_inflow"] if fund_flow["main_inflow"] is not None else "数据不可用")
-        columns[1].metric("流入金额", fund_flow["fund_in"] if fund_flow["fund_in"] is not None else "数据不可用")
-        columns[2].metric("流出金额", fund_flow["fund_out"] if fund_flow["fund_out"] is not None else "数据不可用")
-        st.caption("来源：{} · 时间：{}；仅为历史快照。".format(fund_flow["source"], fund_flow["observed_at"] or "未提供"))
+        kpi_cards(
+            st,
+            [
+                {
+                    "label": "主力净流入",
+                    "value": humanize_amount(fund_flow["main_inflow"]),
+                    "tone": change_tone(fund_flow.get("main_inflow")),
+                },
+                {
+                    "label": "流入金额",
+                    "value": humanize_amount(fund_flow["fund_in"]),
+                    "tone": "up",
+                },
+                {
+                    "label": "流出金额",
+                    "value": humanize_amount(fund_flow["fund_out"]),
+                    "tone": "down",
+                },
+            ],
+        )
+        st.caption(
+            "来源：{} · 时间：{}；仅为历史快照。".format(
+                fund_flow["source"], humanize_datetime(fund_flow["observed_at"])
+            )
+        )
     st.subheader("财务指标（只读缓存）")
     financials = detail["financials"]
     if refresh_financials is not None:
@@ -157,7 +211,7 @@ def render_stock_detail(
             "最新报告期：{} · 来源：{} · 刷新时间：{}（{}）".format(
                 financials.get("latest_report_date") or "未提供",
                 financials.get("source") or "未提供",
-                financials.get("fetched_at") or "未提供",
+                humanize_datetime(financials.get("fetched_at")),
                 cache_age_text(financials.get("fetched_at")),
             )
         )
@@ -187,7 +241,7 @@ def render_stock_detail(
         )
         st.caption(
             "估值指标来自已留存快照，不视为实时数据；快照时间：{}（{}）。".format(
-                latest_observed_at or "未提供",
+                humanize_datetime(latest_observed_at),
                 cache_age_text(latest_observed_at),
             )
         )

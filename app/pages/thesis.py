@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from app.dashboard.ui import kpi_cards, section_title
+
 
 def thesis_rows(overview: Dict[str, object]) -> List[Dict[str, str]]:
     """Format persisted thesis items without presenting missing definitions as green."""
@@ -23,9 +25,25 @@ def thesis_rows(overview: Dict[str, object]) -> List[Dict[str, str]]:
 
 def render_thesis_overview(st, overview: Dict[str, object], submit_version, fetch_versions) -> None:
     """Render the thesis tracker as an evidence inventory rather than advice."""
-    st.subheader("投资逻辑追踪")
+    section_title(st, "投资逻辑追踪", "基于已留存持仓快照的 Thesis、验证指标与失效条件清单。")
     total = overview.get("total", 0)
     missing = overview.get("needs_definition_count", 0)
+    kpi_cards(
+        st,
+        [
+            {"label": "持仓数量", "value": total, "tone": "neutral"},
+            {
+                "label": "待定义",
+                "value": missing,
+                "tone": "warn" if missing else "good",
+            },
+            {
+                "label": "已定义",
+                "value": max(0, total - missing),
+                "tone": "good",
+            },
+        ],
+    )
     st.caption("基于 {} 份持仓快照；数据来源：{}".format(overview.get("as_of_date") or "未提供", overview.get("source_path") or "未提供"))
     if missing:
         st.warning("{} / {} 个持仓缺少可验证的投资逻辑、验证指标或失效条件。状态不代表交易建议。".format(missing, total))

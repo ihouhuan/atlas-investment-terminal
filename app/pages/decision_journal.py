@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from app.dashboard.ui import kpi_cards, section_title
+
 
 def decision_rows(journal: Dict[str, object]) -> List[Dict[str, str]]:
     """Format decision timeline rows while leaving missing migrated fields explicit."""
@@ -21,9 +23,25 @@ def decision_rows(journal: Dict[str, object]) -> List[Dict[str, str]]:
 
 def render_decision_journal(st, journal: Dict[str, object], submit_update, fetch_updates) -> None:
     """Render migrated decision evidence without generating investment advice."""
-    st.subheader("决策日志")
+    section_title(st, "决策日志", "已迁移历史决策与用户补录事件的只读研究复盘。")
     incomplete = journal.get("incomplete_import_count", 0)
     planned = journal.get("planned_record_count", 0)
+    kpi_cards(
+        st,
+        [
+            {"label": "已迁移", "value": journal.get("total", 0), "tone": "neutral"},
+            {
+                "label": "计划记录",
+                "value": planned,
+                "tone": "warn" if planned else "good",
+            },
+            {
+                "label": "导入不完整",
+                "value": incomplete,
+                "tone": "danger" if incomplete else "good",
+            },
+        ],
+    )
     st.caption("已迁移 {} 条历史决策记录。页面仅用于研究复盘，不构成投资建议。".format(journal.get("total", 0)))
     if incomplete:
         st.warning("{} 条记录的原始格式无法完整自动迁移；请结合来源文件人工复核。".format(incomplete))

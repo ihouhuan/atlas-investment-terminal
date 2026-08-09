@@ -17,6 +17,13 @@ from app.pages.morning_brief import render_morning_brief
 from app.pages.screener import render_screener
 from app.pages.stock_detail import render_stock_detail
 from app.pages.thesis import render_thesis_overview
+from app.dashboard.ui import (
+    change_tone,
+    humanize_datetime,
+    inject_theme,
+    kpi_cards,
+    section_title,
+)
 
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
@@ -84,6 +91,7 @@ def run_dashboard() -> None:
     import streamlit as st
 
     st.set_page_config(page_title="Atlas Investment Terminal", page_icon="📈", layout="wide")
+    inject_theme(st)
     st.title("Atlas Investment Terminal")
     st.caption("A 股研究终端 · 数据不可用时不显示估算值")
 
@@ -220,33 +228,63 @@ def run_dashboard() -> None:
         st.code("uvicorn backend.api.app:app --reload")
         return
 
-    st.subheader("A 股市场状态")
-    index_rows = market_index_rows(overview)
-    columns = st.columns(len(index_rows))
-    for column, row in zip(columns, index_rows):
-        column.metric(row["指数"], row["最新价"], row["涨跌幅"])
-        column.caption("{} · {}".format(row["状态"], row["来源"]))
+    section_title(st, "A 股市场状态", "行情与广度均保留来源、时间与历史缓存标记。")
+    index_items = []
+    for index in overview.get("indices", []):
+        price = index.get("price")
+        change = index.get("change_pct")
+        index_items.append(
+            {
+                "label": index.get("name", "未知"),
+                "value": "数据不可用" if price is None else format(float(price), ",.2f"),
+                "note": "{} · {}".format(
+                    index.get("source") or "未提供",
+                    humanize_datetime(index.get("observed_at")),
+                ),
+                "tone": change_tone(change),
+            }
+        )
+    kpi_cards(st, index_items)
 
     breadth = overview.get("breadth", {})
     if breadth.get("status") != "available":
         st.info("市场广度暂不可用：{}".format(breadth.get("reason", "未提供")))
     else:
-        breadth_columns = st.columns(5)
-        breadth_columns[0].metric("上涨家数", breadth.get("advancers"))
-        breadth_columns[1].metric("下跌家数", breadth.get("decliners"))
-        breadth_columns[2].metric("涨停", breadth.get("limit_up"))
-        breadth_columns[3].metric("跌停", breadth.get("limit_down"))
         turnover = breadth.get("turnover_yi")
-        breadth_columns[4].metric(
-            "成交额（亿）",
-            "数据不可用"
-            if turnover is None
-            else format(float(turnover), ",.2f"),
+        kpi_cards(
+            st,
+            [
+                {
+                    "label": "上涨家数",
+                    "value": breadth.get("advancers") if breadth.get("advancers") is not None else "数据不可用",
+                    "tone": "up",
+                },
+                {
+                    "label": "下跌家数",
+                    "value": breadth.get("decliners") if breadth.get("decliners") is not None else "数据不可用",
+                    "tone": "down",
+                },
+                {
+                    "label": "涨停",
+                    "value": breadth.get("limit_up") if breadth.get("limit_up") is not None else "数据不可用",
+                    "tone": "up",
+                },
+                {
+                    "label": "跌停",
+                    "value": breadth.get("limit_down") if breadth.get("limit_down") is not None else "数据不可用",
+                    "tone": "down",
+                },
+                {
+                    "label": "成交额（亿）",
+                    "value": "数据不可用" if turnover is None else format(float(turnover), ",.2f"),
+                    "tone": "neutral",
+                },
+            ],
         )
         st.caption(
             "市场广度来源：{} · 时间：{} · {}".format(
                 breadth.get("source") or "未提供",
-                breadth.get("as_of") or "未提供",
+                humanize_datetime(breadth.get("as_of")),
                 "历史缓存" if breadth.get("cached_at") else "实时",
             )
         )

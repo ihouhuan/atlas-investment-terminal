@@ -123,6 +123,14 @@ def render_portfolio_risk(st, overview: Dict[str, object], open_actions: Dict[st
             for item in overview["industry_concentration"]
         ]
         st.dataframe(concentration_rows, width="stretch", hide_index=True)
+        concentration_weights = {
+            item["sector"]: float(item["weight"])
+            for item in overview["industry_concentration"]
+            if item.get("weight") is not None
+        }
+        if concentration_weights:
+            st.caption("行业集中度（权重）")
+            st.bar_chart(concentration_weights)
 
     with tab_stress:
         st.caption("以下为旧 Atlas 场景库的假设结果，不预测未来市场表现。")

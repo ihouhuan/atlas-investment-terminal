@@ -288,6 +288,20 @@ def run_dashboard() -> None:
                 "历史缓存" if breadth.get("cached_at") else "实时",
             )
         )
+        breadth_chart = {}
+        for label, key in (
+            ("上涨", "advancers"),
+            ("下跌", "decliners"),
+            ("平盘", "unchanged"),
+            ("涨停", "limit_up"),
+            ("跌停", "limit_down"),
+        ):
+            value = breadth.get(key)
+            if value is not None:
+                breadth_chart[label] = value
+        if breadth_chart:
+            st.caption("市场广度结构（家数）")
+            st.bar_chart(breadth_chart)
 
     st.subheader("股票池")
     try:

@@ -187,6 +187,16 @@ def render_morning_brief(
             },
         ],
     )
+    summary_parts = []
+    open_total = open_actions.get("total", 0)
+    risk_count = portfolio["risk"]["violation_count"]
+    thesis_missing = integrity["missing_thesis_count"]
+    summary_parts.append(
+        "{} 项复盘待办".format(open_total) if open_total else "暂无待办"
+    )
+    summary_parts.append("{} 项风险违规".format(risk_count))
+    summary_parts.append("{} 个持仓缺 Thesis".format(thesis_missing))
+    st.info("今日状态：" + "；".join(summary_parts) + "。")
     if open_actions.get("items"):
         st.warning("有 {} 项复盘行动待处理。".format(open_actions["total"]))
         st.dataframe(open_action_rows(open_actions), width="stretch", hide_index=True)

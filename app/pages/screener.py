@@ -46,7 +46,19 @@ def render_screener(st, result: Dict[str, object]) -> None:
         ],
     )
     st.caption("候选股票 {} 只。每项指标来源均显示在结果表中。".format(result.get("total", 0)))
-    st.dataframe(screener_rows(result), width="stretch", hide_index=True)
+    rows = screener_rows(result)
+    sort_option = st.selectbox(
+        "结果排序",
+        ["代码", "PE TTM", "ROE", "净利润同比"],
+        key="screener-sort",
+    )
+    if sort_option == "PE TTM":
+        rows.sort(key=lambda row: _sort_number(row["PE TTM"]))
+    elif sort_option == "ROE":
+        rows.sort(key=lambda row: _sort_number(row["ROE"]))
+    elif sort_option == "净利润同比":
+        rows.sort(key=lambda row: _sort_number(row["净利润同比"]))
+    st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def _format_number(value: object) -> str:
@@ -55,3 +67,12 @@ def _format_number(value: object) -> str:
 
 def _format_percent(value: object) -> str:
     return "数据不可用" if value is None else "{:.2f}%".format(float(value))
+
+
+def _sort_number(value: str) -> float:
+    if value == "数据不可用":
+        return float("inf")
+    try:
+        return float(str(value).replace(",", "").replace("%", ""))
+    except ValueError:
+        return float("inf")

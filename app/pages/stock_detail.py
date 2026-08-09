@@ -225,28 +225,28 @@ def render_stock_detail(
                     history_rows, width="stretch", hide_index=True
                 )
         st.caption("仅展示已缓存数据，不提供手动编辑；刷新会替换同一报告期的缓存值。")
-    st.subheader("估值（历史快照）")
-    valuation = detail["valuation"]
-    if valuation["status"] == "available":
-        st.dataframe(
-            valuation_rows(valuation), width="stretch", hide_index=True
-        )
-        latest_observed_at = max(
-            (
-                metric.get("observed_at")
-                for metric in valuation.get("metrics", {}).values()
-                if metric.get("observed_at")
-            ),
-            default=None,
-        )
-        st.caption(
-            "估值指标来自已留存快照，不视为实时数据；快照时间：{}（{}）。".format(
-                humanize_datetime(latest_observed_at),
-                cache_age_text(latest_observed_at),
+    with st.expander("估值（历史快照）", expanded=False):
+        valuation = detail["valuation"]
+        if valuation["status"] == "available":
+            st.dataframe(
+                valuation_rows(valuation), width="stretch", hide_index=True
             )
-        )
-    else:
-        st.info(valuation.get("reason") or "本地暂无可验证的 PE、PB 或市值估值快照。")
+            latest_observed_at = max(
+                (
+                    metric.get("observed_at")
+                    for metric in valuation.get("metrics", {}).values()
+                    if metric.get("observed_at")
+                ),
+                default=None,
+            )
+            st.caption(
+                "估值指标来自已留存快照，不视为实时数据；快照时间：{}（{}）。".format(
+                    humanize_datetime(latest_observed_at),
+                    cache_age_text(latest_observed_at),
+                )
+            )
+        else:
+            st.info(valuation.get("reason") or "本地暂无可验证的 PE、PB 或市值估值快照。")
 
 
 def _format_metric(metric) -> str:

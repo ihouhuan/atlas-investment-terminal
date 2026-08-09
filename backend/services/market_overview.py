@@ -1,7 +1,8 @@
 from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from backend.services.market_breadth import MarketBreadthProvider
 from backend.services.market_data import MarketDataProvider
 
 
@@ -12,7 +13,10 @@ MARKET_INDICES = (
 )
 
 
-def build_market_overview(provider: MarketDataProvider) -> Dict[str, object]:
+def build_market_overview(
+    provider: MarketDataProvider,
+    breadth_provider: Optional[MarketBreadthProvider] = None,
+) -> Dict[str, object]:
     """Build an A-share market overview without estimating unsupported breadth data."""
     symbols = [symbol for _, symbol in MARKET_INDICES]
     quotes = provider.get_quotes(symbols)
@@ -24,14 +28,36 @@ def build_market_overview(provider: MarketDataProvider) -> Dict[str, object]:
     return {
         "as_of": datetime.now(timezone.utc).isoformat(),
         "indices": indices,
-        "breadth": {
+        "breadth": _build_breadth(breadth_provider),
+    }
+
+
+def _build_breadth(
+    breadth_provider: Optional[MarketBreadthProvider],
+) -> Dict[str, object]:
+    if breadth_provider is None:
+        return {
             "advancers": None,
             "decliners": None,
+            "unchanged": None,
             "limit_up": None,
             "limit_down": None,
-            "turnover": None,
+            "turnover_yi": None,
             "status": "unavailable",
             "source": None,
-            "reason": "Current configured sources do not provide verified market breadth.",
-        },
-    }
+            "reason": "No verified market breadth source is configured.",
+        }
+    try:
+        return breadth_provider.get_breadth()
+    except Exception as error:
+        return {
+            "advancers": None,
+            "decliners": None,
+            "unchanged": None,
+            "limit_up": None,
+            "limit_down": None,
+            "turnover_yi": None,
+            "status": "unavailable",
+            "source": None,
+            "reason": str(error),
+        }

@@ -85,6 +85,10 @@ python3 -m backend.services.initialize_atlas
 
 每次成功的行情请求会写入 SQLite 的 `market_quote_cache` 表。当网络或上游数据源不可用时，市场概览、自选股和股票详情会回退到最近一次成功快照，并在页面标记为“历史缓存”，避免把旧行情伪装成实时数据。内存 TTL 缓存继续用于减少交互刷新次数。
 
+## 市场广度
+
+`/api/v1/market/overview` 使用 AkShare 的 `stock_zh_a_spot_em` 全市场快照计算上涨/下跌/平盘家数、涨停/跌停家数和全市场成交额，Eastmoney 不可用时回退到新浪 `stock_zh_a_spot`。涨停/跌停按主板、创业板/科创板、北交所和 ST 的涨跌幅限制分别判断；所有上游不可用时返回 `status: "unavailable"` 并附原因，不估算缺失值。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

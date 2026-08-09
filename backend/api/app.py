@@ -15,6 +15,12 @@ from backend.services.financial_refresh import (
     refresh_stock_financials,
     refresh_stock_financials_batch,
 )
+from backend.services.market_breadth import (
+    AkshareMarketBreadthProvider,
+    FallbackMarketBreadthProvider,
+    MarketBreadthProvider,
+    SinaMarketBreadthProvider,
+)
 from backend.services.market_data import (
     AkshareMarketDataProvider,
     CachedMarketDataProvider,
@@ -102,6 +108,7 @@ def create_app(
     provider: Optional[MarketDataProvider] = None,
     financial_provider: Optional[FinancialDataProvider] = None,
     stock_provider: Optional[StockMetadataProvider] = None,
+    breadth_provider: Optional[MarketBreadthProvider] = None,
 ) -> FastAPI:
     """Create the Atlas API with a single shared market-data provider chain."""
     schema_connection = connect(database_path)
@@ -121,6 +128,10 @@ def create_app(
     )
     financial_data_provider = financial_provider or AkshareFinancialDataProvider()
     stock_data_provider = stock_provider or AkshareStockMetadataProvider()
+    market_breadth_provider = breadth_provider or FallbackMarketBreadthProvider(
+        AkshareMarketBreadthProvider(),
+        SinaMarketBreadthProvider(),
+    )
 
     @application.get("/health")
     def health() -> dict:
@@ -128,7 +139,7 @@ def create_app(
 
     @application.get("/api/v1/market/overview")
     def market_overview() -> dict:
-        overview = build_market_overview(market_data_provider)
+        overview = build_market_overview(market_data_provider, market_breadth_provider)
         overview["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
         return overview
 
@@ -136,7 +147,7 @@ def create_app(
     def refresh_market_overview() -> dict:
         if hasattr(market_data_provider, "clear_cache"):
             market_data_provider.clear_cache()
-        overview = build_market_overview(market_data_provider)
+        overview = build_market_overview(market_data_provider, market_breadth_provider)
         overview["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
         return overview
 
@@ -144,7 +155,7 @@ def create_app(
     def morning_brief_overview() -> dict:
         connection = connect(database_path)
         try:
-            market = build_market_overview(market_data_provider)
+            market = build_market_overview(market_data_provider, market_breadth_provider)
             market["cache"] = market_data_provider.cache_info() if hasattr(market_data_provider, "cache_info") else None
             return {
                 "market": market,

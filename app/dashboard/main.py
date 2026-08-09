@@ -49,10 +49,10 @@ def market_index_rows(overview: Dict[str, object]) -> List[Dict[str, str]]:
     return rows
 
 
-def fetch_json(url: str) -> Dict[str, object]:
+def fetch_json(url: str, timeout: int = 12) -> Dict[str, object]:
     """Fetch a JSON API response for the dashboard."""
     request = Request(url, headers={"Accept": "application/json"})
-    with urlopen(request, timeout=12) as response:
+    with urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -64,7 +64,7 @@ def post_json(url: str, payload: Dict[str, object]) -> Dict[str, object]:
         headers={"Accept": "application/json", "Content-Type": "application/json"},
         method="POST",
     )
-    with urlopen(request, timeout=12) as response:
+    with urlopen(request, timeout=60) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -76,7 +76,7 @@ def patch_json(url: str, payload: Dict[str, object]) -> Dict[str, object]:
         headers={"Accept": "application/json", "Content-Type": "application/json"},
         method="PATCH",
     )
-    with urlopen(request, timeout=12) as response:
+    with urlopen(request, timeout=60) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -91,7 +91,7 @@ def run_dashboard() -> None:
     page = st.sidebar.radio("导航", ["晨报", "市场概览", "选股中心", "股票详情", "投资逻辑", "决策日志", "组合与风险"])
     if page == "晨报":
         try:
-            brief = fetch_json(api_url + "/api/v1/morning-brief/overview")
+            brief = fetch_json(api_url + "/api/v1/morning-brief/overview", timeout=60)
             render_morning_brief(
                 st,
                 brief["market"],
@@ -214,7 +214,7 @@ def run_dashboard() -> None:
         return
 
     try:
-        overview = fetch_json(api_url + "/api/v1/market/overview")
+        overview = fetch_json(api_url + "/api/v1/market/overview", timeout=60)
     except Exception as error:
         st.error("无法连接 Atlas API：{}".format(error))
         st.code("uvicorn backend.api.app:app --reload")
@@ -230,6 +230,25 @@ def run_dashboard() -> None:
     breadth = overview.get("breadth", {})
     if breadth.get("status") != "available":
         st.info("市场广度暂不可用：{}".format(breadth.get("reason", "未提供")))
+    else:
+        breadth_columns = st.columns(5)
+        breadth_columns[0].metric("上涨家数", breadth.get("advancers"))
+        breadth_columns[1].metric("下跌家数", breadth.get("decliners"))
+        breadth_columns[2].metric("涨停", breadth.get("limit_up"))
+        breadth_columns[3].metric("跌停", breadth.get("limit_down"))
+        turnover = breadth.get("turnover_yi")
+        breadth_columns[4].metric(
+            "成交额（亿）",
+            "数据不可用"
+            if turnover is None
+            else format(float(turnover), ",.2f"),
+        )
+        st.caption(
+            "市场广度来源：{} · 时间：{}".format(
+                breadth.get("source") or "未提供",
+                breadth.get("as_of") or "未提供",
+            )
+        )
 
     st.subheader("股票池")
     try:

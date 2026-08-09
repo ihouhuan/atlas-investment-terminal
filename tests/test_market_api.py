@@ -69,6 +69,20 @@ class StubStockMetadataProvider:
         }
 
 
+class StubMarketBreadthProvider:
+    def get_breadth(self) -> dict:
+        return {
+            "status": "available",
+            "advancers": 4000,
+            "decliners": 1000,
+            "limit_up": 50,
+            "limit_down": 10,
+            "turnover_yi": 12345.67,
+            "source": "stub_breadth",
+            "as_of": "2026-08-09T10:00:00+00:00",
+        }
+
+
 class MarketApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -80,6 +94,7 @@ class MarketApiTests(unittest.TestCase):
                 StubMarketDataProvider(),
                 StubFinancialProvider(),
                 StubStockMetadataProvider(),
+                StubMarketBreadthProvider(),
             )
         )
 
@@ -87,7 +102,7 @@ class MarketApiTests(unittest.TestCase):
         self.client.close()
         self.temporary_directory.cleanup()
 
-    def test_market_overview_returns_index_quotes_and_unavailable_breadth(self) -> None:
+    def test_market_overview_returns_index_quotes_and_available_breadth(self) -> None:
         response = self.client.get("/api/v1/market/overview")
 
         self.assertEqual(200, response.status_code)
@@ -95,7 +110,9 @@ class MarketApiTests(unittest.TestCase):
         self.assertEqual(3, len(body["indices"]))
         self.assertEqual("沪深300", body["indices"][0]["name"])
         self.assertEqual("test_provider", body["indices"][0]["source"])
-        self.assertEqual("unavailable", body["breadth"]["status"])
+        self.assertEqual("available", body["breadth"]["status"])
+        self.assertEqual(4000, body["breadth"]["advancers"])
+        self.assertEqual(12345.67, body["breadth"]["turnover_yi"])
 
     def test_watchlist_returns_database_stocks_with_quote_provenance(self) -> None:
         response = self.client.get("/api/v1/watchlist?limit=2")
@@ -345,6 +362,7 @@ class MarketApiTests(unittest.TestCase):
                 StubMarketDataProvider(),
                 FailingFinancialProvider(),
                 StubStockMetadataProvider(),
+                StubMarketBreadthProvider(),
             )
         )
         self.addCleanup(client.close)

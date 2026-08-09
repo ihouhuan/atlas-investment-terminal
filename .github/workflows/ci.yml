@@ -35,12 +35,12 @@ jobs:
       - name: Install Playwright browser
         run: npx --yes playwright install --with-deps chromium
       - name: Initialize local database
-        run: .venv/bin/python -m backend.services.initialize_atlas --database data/atlas.db
+        run: python -m backend.services.initialize_atlas --database data/atlas.db
       - name: Run UI smoke
         run: |
-          .venv/bin/uvicorn backend.api.app:app --host 127.0.0.1 --port 8000 > /tmp/atlas_api.log 2>&1 &
+          python -m uvicorn backend.api.app:app --host 127.0.0.1 --port 8000 > /tmp/atlas_api.log 2>&1 &
           API_PID=$!
-          ATLAS_API_URL=http://127.0.0.1:8000 .venv/bin/streamlit run app/dashboard/main.py --server.port 8501 --server.headless true > /tmp/streamlit.log 2>&1 &
+          ATLAS_API_URL=http://127.0.0.1:8000 python -m streamlit run app/dashboard/main.py --server.port 8501 --server.headless true > /tmp/streamlit.log 2>&1 &
           STREAMLIT_PID=$!
           trap 'kill $API_PID $STREAMLIT_PID 2>/dev/null || true' EXIT
           for i in $(seq 1 60); do

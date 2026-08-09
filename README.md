@@ -71,6 +71,16 @@ python3 -m backend.services.initialize_atlas
 
 也可以调用 `POST /api/v1/stocks/financials/refresh?symbols=000021.SZ,601899.SH`。详情页会显示财务缓存与估值快照距今的时间，避免把陈旧数据误读为实时数据。
 
+## 股票主数据
+
+新增或更新一只 A 股主数据：
+
+```bash
+.venv/bin/python -m backend.services.stock_master --symbol 600000.SH --name 浦发银行
+```
+
+也可以调用 `POST /api/v1/stocks`，请求体例如 `{"symbol": "600000.SH", "name": "浦发银行"}`。服务会优先尝试用 AkShare 补全交易所和行业；补全失败时使用用户提供的名称创建记录，不会把缺失字段估算成事实。新股票创建后即可用单股财务刷新接口拉取缓存。
+
 ## 依赖与 CI
 
 - `requirements.txt` 锁定顶层运行依赖版本。

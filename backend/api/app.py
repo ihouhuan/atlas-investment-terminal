@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, status
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 
 from backend.database.connection import connect
 from backend.database.schema import initialize_database
@@ -38,6 +39,11 @@ from backend.services.market_overview import build_market_overview
 from backend.services.portfolio_analysis import build_portfolio_overview
 from backend.services.screener import screen_stocks
 from backend.services.stock_detail import build_stock_detail
+from backend.services.stock_master import (
+    AkshareStockMetadataProvider,
+    StockMetadataProvider,
+    upsert_stock_record,
+)
 from backend.services.thesis import build_thesis_overview, create_thesis_version, get_thesis_versions
 from backend.services.watchlist import get_watchlist
 
@@ -81,10 +87,20 @@ class MorningBriefActionStatusInput(BaseModel):
     completed: bool
 
 
+class StockInput(BaseModel):
+    symbol: str
+    name: Optional[str] = None
+    exchange: Optional[str] = None
+    sector: Optional[str] = None
+    industry: Optional[str] = None
+    enrich: bool = True
+
+
 def create_app(
     database_path: Path = Path("data/atlas.db"),
     provider: Optional[MarketDataProvider] = None,
     financial_provider: Optional[FinancialDataProvider] = None,
+    stock_provider: Optional[StockMetadataProvider] = None,
 ) -> FastAPI:
     """Create the Atlas API with a single shared market-data provider chain."""
     schema_connection = connect(database_path)
@@ -97,6 +113,7 @@ def create_app(
         FallbackMarketDataProvider(TencentMarketDataProvider(), AkshareMarketDataProvider())
     )
     financial_data_provider = financial_provider or AkshareFinancialDataProvider()
+    stock_data_provider = stock_provider or AkshareStockMetadataProvider()
 
     @application.get("/health")
     def health() -> dict:
@@ -280,6 +297,28 @@ def create_app(
             raise HTTPException(status_code=404, detail=str(error))
         finally:
             connection.close()
+
+    @application.post("/api/v1/stocks")
+    def create_stock(input_data: StockInput):
+        connection = connect(database_path)
+        try:
+            result = upsert_stock_record(
+                connection,
+                input_data.symbol,
+                input_data.name,
+                input_data.exchange,
+                input_data.sector,
+                input_data.industry,
+                stock_data_provider if input_data.enrich else None,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error))
+        finally:
+            connection.close()
+        return JSONResponse(
+            content=result,
+            status_code=201 if result["status"] == "created" else 200,
+        )
 
     @application.post("/api/v1/stocks/{symbol}/financials/refresh")
     def refresh_stock_financial(symbol: str) -> dict:

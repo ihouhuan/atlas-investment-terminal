@@ -59,6 +59,16 @@ class FailingFinancialProvider:
         raise FinancialDataError("upstream unavailable")
 
 
+class StubStockMetadataProvider:
+    def get_stock_metadata(self, symbol: str) -> dict:
+        return {
+            "name": "浦发银行",
+            "exchange": "SH",
+            "sector": None,
+            "industry": "银行",
+        }
+
+
 class MarketApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -69,6 +79,7 @@ class MarketApiTests(unittest.TestCase):
                 self.database_path,
                 StubMarketDataProvider(),
                 StubFinancialProvider(),
+                StubStockMetadataProvider(),
             )
         )
 
@@ -280,6 +291,36 @@ class MarketApiTests(unittest.TestCase):
         )
         self.assertEqual("2026-03-31", financials["latest_report_date"])
 
+    def test_creates_new_stock_master_record_and_exposes_detail(self) -> None:
+        response = self.client.post(
+            "/api/v1/stocks",
+            json={"symbol": "600000.SH", "name": "浦发银行"},
+        )
+
+        self.assertEqual(201, response.status_code)
+        body = response.json()
+        self.assertEqual("created", body["status"])
+        self.assertEqual("SH", body["stock"]["exchange"])
+        self.assertEqual("银行", body["stock"]["industry"])
+
+        detail = self.client.get("/api/v1/stocks/600000.SH")
+        self.assertEqual(200, detail.status_code)
+        self.assertEqual("浦发银行", detail.json()["company"]["name"])
+
+        refresh = self.client.post("/api/v1/stocks/600000.SH/financials/refresh")
+        self.assertEqual(200, refresh.status_code)
+
+    def test_updates_existing_stock_master_record_without_duplicate(self) -> None:
+        response = self.client.post(
+            "/api/v1/stocks",
+            json={"symbol": "000021.SZ", "name": "深科技"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("updated", response.json()["status"])
+        watchlist = self.client.get("/api/v1/watchlist?limit=200")
+        self.assertEqual(87, watchlist.json()["total"])
+
     def test_financial_refresh_returns_404_for_unknown_symbol(self) -> None:
         response = self.client.post("/api/v1/stocks/999999.SZ/financials/refresh")
 
@@ -303,6 +344,7 @@ class MarketApiTests(unittest.TestCase):
                 self.database_path,
                 StubMarketDataProvider(),
                 FailingFinancialProvider(),
+                StubStockMetadataProvider(),
             )
         )
         self.addCleanup(client.close)
